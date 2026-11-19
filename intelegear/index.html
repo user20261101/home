@@ -134,13 +134,15 @@ async function load(){
   CAT=Object.fromEntries(cat.data.map(c=>[c.code,c]));
   P=pl.data;
   if(!P){return register();}
-  const [it,ro,en,rk,eq,sy]=await Promise.all([
+  const [it,ro,en,rk,eq,sy,so]=await Promise.all([
     sb.from('ig_items').select('*').order('id'),
     sb.from('ig_rounds').select('*').order('no',{ascending:false}).limit(3),
     sb.from('ig_entries').select('*'),
     sb.from('ig_players').select('name,earned').order('earned',{ascending:false}).limit(10),
     sb.from('ig_equip').select('*'),
-    sb.from('ig_sync').select('*')]);
+    sb.from('ig_sync').select('*'),
+    sb.rpc('ig_soldout')]);
+  SOLD=so.data||[];
   SYNC={};(sy.data||[]).forEach(x=>SYNC[x.figure_id]=x.value);
   ITEMS=it.data||[];ROUNDS=ro.data||[];ENT=en.data||[];RANK=rk.data||[];EQ=eq.data||[];
   const ids=ROUNDS.map(r=>r.id);
@@ -177,7 +179,7 @@ function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();
 const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
 const PIC={f_arte:'img/f_arte.png'};
-let route=[],SINGLE=false,EQ=[],editFig=null,SYNC={};
+let route=[],SINGLE=false,EQ=[],editFig=null,SYNC={},SOLD=[];
 const syncBar=i=>{const v=SYNC[i.id]||0;return `<div class="st" title="体の性能は変わらず、ソフトウェアが成長して得点と安定感が上がります">シンクロ率　<b>${v}%</b></div><div style="height:5px;background:var(--line,#334);border-radius:3px;margin:2px 0 4px"><div style="height:5px;width:${v}%;background:var(--accent,#4ad);border-radius:3px"></div></div>`;};
 const hasMap=f=>!!(f.params&&f.params.map);
 function mapInner(f){
@@ -306,10 +308,10 @@ function vGarage(){
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
 function vCat(){
-  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。同じものを何個でも買えます。</p>${msgBox()}</div>`;
+  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは世界に1体ずつだけで、誰かが所持している間はソールドアウトです（売却すると再び買えます）。武装・防具・チップは何個でも買えます。</p>${msgBox()}</div>`;
   for(const k of Object.keys(KIND)){h+=`<h2 class="sec">${KIND[k]}</h2><div class="grid ${k==='figure'?'figs':''}">`+Object.values(CAT).filter(c=>c.kind===k).map(c=>
     `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-    <button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button></div></div>`).join('')+'</div>';}
+    ${k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト${ITEMS.some(i=>i.code===c.code)?'（あなたが所持）':''}</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`).join('')+'</div>';}
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await sb.rpc('ig_buy',{p_code:b.dataset.b});
     flash=r.error?'!'+r.error.message:`${CAT[b.dataset.b].name}を購入しました。ガレージに入りました。`;await load();});
