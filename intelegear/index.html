@@ -274,6 +274,7 @@ function vRes(){
       const top=rs.slice(0,10);if(mine&&mine.rank>10)top.push(mine);
       h+=`<table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
       (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}<p>${esc(r.text)}</p></div>`);
+      if((rep.editor_note||[]).length)h+=`<div class="card" style="background:var(--panel2);margin:10px 0 0"><b>編集部ノート</b>${rep.editor_note.map(t=>`<p style="margin:6px 0 0;font-size:14px">${esc(t)}</p>`).join('')}</div>`;
       h+='</div>';}
   }
   h+=`<h2 class="sec">獲得ポイントランキング</h2><div class="card"><p class="mute">購入や強化で使っても減りません（戦場で稼いだ累計）。</p><table>${RANK.map((p,i)=>`<tr class="${p.name===P.name?'me':''}"><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.earned}pt</td></tr>`).join('')}</table></div>`;
