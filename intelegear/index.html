@@ -46,6 +46,11 @@ tr.npc td{color:var(--mute)}
 .replay{border-left:3px solid var(--pink);padding:2px 12px;margin:10px 0;background:var(--panel2);border-radius:0 8px 8px 0}
 .replay p{margin:6px 0;white-space:pre-wrap}
 h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
+.grid.figs{grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}
+.item.fig{display:flex;gap:12px;align-items:stretch}
+.item.fig .bd{flex:1;min-width:0}
+.pt-frame{flex:0 0 108px;aspect-ratio:2/3;border:1px dashed var(--rule);border-radius:8px;background:repeating-linear-gradient(135deg,#1a2240 0 8px,#161c34 8px 16px);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--mute);font-size:11px;text-align:center;line-height:1.3}
+.pt-frame img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 </head>
 <body>
@@ -138,6 +143,8 @@ function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.point
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;flash='';draw();});}
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
+const PIC={f_arte:'img/f_arte.png'};
+const portrait=code=>`<div class="pt-frame">${PIC[code]?`<img src="${PIC[code]}" alt="" loading="lazy" onerror="this.parentNode.textContent='画像準備中'">`:'画像準備中'}</div>`;
 const ENVN={land:'陸',water:'水',space:'宇'},GR=['C','B','A','S'];
 const aptTxt=a=>Object.entries(a||{}).map(([k,v])=>`${ENVN[k]}+${v}段階`).join(' ');
 function stLine(it){const c=CAT[it.code],s=c.stats,l=it.level;
@@ -197,9 +204,9 @@ function vGarage(){
   let h=`<div class="card"><h2>ガレージ</h2><p class="mute">買ったものはここに保管されます。強化は5段階まで。強化するほど次の費用が増えます。</p>${msgBox()}</div>`;
   for(const k of Object.keys(KIND)){const l=g(k);
     h+=`<h2 class="sec">${KIND[k]}（${l.length}）</h2>`;
-    h+=l.length?`<div class="grid">${l.map(i=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
-      return `<div class="item"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>
-      <div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${Math.floor(c.price/2)}pt</button></div></div>`}).join('')}</div>`:'<p class="mute">なし</p>';}
+    h+=l.length?`<div class="grid ${k==='figure'?'figs':''}">${l.map(i=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
+      return `<div class="item ${k==='figure'?'fig':''}">${k==='figure'?portrait(i.code)+'<div class="bd">':''}<b>${iname(i)}</b><div class="st">${stLine(i)}</div>
+      <div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${Math.floor(c.price/2)}pt</button></div>${k==='figure'?'</div>':''}</div>`}).join('')}</div>`:'<p class="mute">なし</p>';}
   $('#main').innerHTML=h;
   const act=async(fn,ok)=>{const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();};
   document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>act(()=>sb.rpc('ig_upgrade',{p_item:+b.dataset.up}),d=>`強化しました（Lv${d.level}、${d.cost}pt）。`));
@@ -208,9 +215,9 @@ function vGarage(){
 }
 function vCat(){
   let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。同じものを何個でも買えます。</p>${msgBox()}</div>`;
-  for(const k of Object.keys(KIND)){h+=`<h2 class="sec">${KIND[k]}</h2><div class="grid">`+Object.values(CAT).filter(c=>c.kind===k).map(c=>
-    `<div class="item"><b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-    <button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button></div>`).join('')+'</div>';}
+  for(const k of Object.keys(KIND)){h+=`<h2 class="sec">${KIND[k]}</h2><div class="grid ${k==='figure'?'figs':''}">`+Object.values(CAT).filter(c=>c.kind===k).map(c=>
+    `<div class="item ${k==='figure'?'fig':''}">${k==='figure'?portrait(c.code)+'<div class="bd">':''}<b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
+    <button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>${k==='figure'?'</div>':''}</div>`).join('')+'</div>';}
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await sb.rpc('ig_buy',{p_code:b.dataset.b});
     flash=r.error?'!'+r.error.message:`${CAT[b.dataset.b].name}を購入しました。ガレージに入りました。`;await load();});
