@@ -73,7 +73,7 @@ const SB_KEY='sb_publishable_sSaJ9wm9x7Bjw9D4Hg9Xiw_ZrvyKDhw';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STN={shoot:'射撃',mobility:'機動',melee:'格闘',guard:'防御'};
-const KIND={figure:'インテレギア',weapon:'武装',armor:'装甲',chip:'強化チップ'};
+const KIND={figure:'インテレギア',weapon:'武装',armor:'防具・部品',chip:'強化チップ'};
 const RULE={royale:'バトルロイヤル',team:'紅白戦',survival:'耐久試験'};
 const TAC={attack:['攻め','結果の振れ幅が大きい。うまくいけば大勝ち、外せば大負け。'],steady:['堅実','振れ幅が小さい。順位が安定する。'],ambush:['待ち伏せ','中くらいの振れ幅。戦場によって相性が変わる。']};
 let sb,session,P=null,CAT={},ITEMS=[],ROUNDS=[],FIELDS=[],ENT=null,COUNTS={},RES=[],RANK=[],tab='field',pick=null,flash='';
@@ -115,12 +115,13 @@ async function load(){
   CAT=Object.fromEntries(cat.data.map(c=>[c.code,c]));
   P=pl.data;
   if(!P){return register();}
-  const [it,ro,en,rk]=await Promise.all([
+  const [it,ro,en,rk,eq]=await Promise.all([
     sb.from('ig_items').select('*').order('id'),
     sb.from('ig_rounds').select('*').order('no',{ascending:false}).limit(3),
     sb.from('ig_entries').select('*'),
-    sb.from('ig_players').select('name,earned').order('earned',{ascending:false}).limit(10)]);
-  ITEMS=it.data||[];ROUNDS=ro.data||[];ENT=en.data||[];RANK=rk.data||[];
+    sb.from('ig_players').select('name,earned').order('earned',{ascending:false}).limit(10),
+    sb.from('ig_equip').select('*')]);
+  ITEMS=it.data||[];ROUNDS=ro.data||[];ENT=en.data||[];RANK=rk.data||[];EQ=eq.data||[];
   const ids=ROUNDS.map(r=>r.id);
   const fl=ids.length?await sb.from('ig_fields').select('*').in('round_id',ids).order('id'):{data:[]};
   FIELDS=fl.data||[];
@@ -150,12 +151,12 @@ function register(){
 function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.points} pt</span>`;
   const T=[['field','戦場'],['garage','ガレージ'],['cat','カタログ'],['res','結果']];
   const n=$('#nav');n.hidden=false;n.innerHTML=T.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('');
-  n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;flash='';draw();});}
+  n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;editFig=null;flash='';draw();});}
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
 const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
 const PIC={f_arte:'img/f_arte.png'};
-let route=[],SINGLE=false;
+let route=[],SINGLE=false,EQ=[],editFig=null;
 const hasMap=f=>!!(f.params&&f.params.map);
 function mapInner(f){
   const M=f.params.map,act=pick===f.id,pos=Object.fromEntries(M.locs.map(l=>[l.id,l])),pts=route.map(id=>pos[id]).filter(Boolean);
@@ -172,22 +173,39 @@ function bindMap(f){const w=$('#mapw-'+f.id);if(!w)return;
 function refreshMap(f){const w=$('#mapw-'+f.id);if(!w)return;w.innerHTML=mapInner(f);bindMap(f);sortieUpd(f);}
 function sortieUpd(f){
   const rt=$('#rt');if(rt)rt.innerHTML=hasMap(f)?(route.length?`経路：${route.map(r=>`<b>${r}</b>`).join(' → ')}（${route.length}か所）`:'<span style="color:var(--err)">マップの上でスタート地点を選んでください。</span>'):'';
-  const a=$('#apv');if(a){const p=aptPreview(f);a.innerHTML=p?`適性　${p}`:'';}}
+  const a=$('#apv');if(a){const p=aptPreview(f);a.innerHTML=p?`適性　${p}`:'';}
+  const fs=$('#fsum');if(fs){const fg=ITEMS.find(i=>i.id==$('#sf').value);fs.innerHTML=fg?`<div class="st">総合　${effLine(fg)}</div>${loadBar(fg)}<div class="st">${eqSummary(fg)}</div><div class="st" style="margin-top:4px">装備はガレージで変えられます。</div>`:'';}}
 const portrait=code=>`<div class="pt-frame">${PIC[code]?`<img src="${PIC[code]}" alt="" loading="lazy" onerror="this.parentNode.textContent='画像準備中'">`:'画像準備中'}</div>`;
 const ENVN={land:'陸',water:'水',space:'宇'},GR=['C','B','A','S'];
 const aptTxt=a=>Object.entries(a||{}).map(([k,v])=>`${ENVN[k]}+${v}段階`).join(' ');
+const PARTN={hand:'手',arm:'腕',head:'頭',body:'胴',leg:'脚',back:'背中',chip:'チップ'};
+const SLOTS=[['rh','右手','hand'],['lh','左手','hand'],['ra','右腕','arm'],['la','左腕','arm'],['hd','頭','head'],['bd','胴','body'],['lg','脚','leg'],['bk','背中','back'],['c1','チップ1','chip'],['c2','チップ2','chip']];
+const eqOf=fid=>{const m={};EQ.filter(e=>e.figure_id===fid).forEach(e=>m[e.slot]=e.item_id);return m;};
+const itemOf=id=>ITEMS.find(i=>i.id===id);
+function loadOf(fig){const c=CAT[fig.code].stats;let used=0,cap=(c.cap||30)+2*fig.level;
+  Object.values(eqOf(fig.id)).forEach(id=>{const it=itemOf(id);if(!it)return;const s=CAT[it.code].stats;used+=s.weight||0;cap+=s.cap||0;});return {used,cap};}
+function effStats(fig){const c=CAT[fig.code].stats,L=fig.level;
+  let sh=c.shoot*(1+.08*L),mo=c.mobility*(1+.08*L),me=c.melee*(1+.08*L),gu=c.guard*(1+.08*L);
+  Object.values(eqOf(fig.id)).forEach(id=>{const it=itemOf(id);if(!it)return;const s=CAT[it.code].stats;gu+=(s.guard||0)*(1+.06*it.level);mo+=s.mobility||0;sh+=s.shoot||0;me+=s.melee||0;});
+  const ld=loadOf(fig);mo*=1-.12*ld.used/Math.max(ld.cap,1);
+  return {shoot:sh,mobility:mo,melee:me,guard:gu};}
+const r1=x=>Math.round(x*10)/10;
+const effLine=fig=>{const e=effStats(fig);return Object.keys(STN).map(k=>`${STN[k]}${r1(e[k])}`).join(' / ');};
+const loadBar=fig=>{const l=loadOf(fig),pc=Math.min(100,Math.round(100*l.used/Math.max(l.cap,1)));
+  return `<div class="st">積載 <b>${l.used}</b> / ${l.cap}</div><div style="height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin:2px 0 4px"><div style="width:${pc}%;height:100%;background:${pc>=90?'var(--pink)':'var(--accent)'}"></div></div>`;};
+const eqSummary=fig=>{const eq=eqOf(fig.id),a=SLOTS.filter(sl=>eq[sl[0]]&&itemOf(eq[sl[0]])).map(sl=>`${sl[1]}：${esc(CAT[itemOf(eq[sl[0]]).code].name)}`);return a.length?a.join('<br>'):'装備なし';};
 function stLine(it){const c=CAT[it.code],s=c.stats,l=it.level;
-  if(c.kind==='figure')return Object.keys(STN).map(k=>`${STN[k]}${lv(s[k],l)}`).join(' / ')+'<br>適性　'+Object.keys(ENVN).map(k=>`${ENVN[k]}<b>${s.apt[k]}</b>`).join(' ');
-  if(c.kind==='weapon')return `${s.kind==='shoot'?'射撃':'近接'}武装　威力${lv(s.power,l,0.1)}`;
-  if(c.kind==='armor')return `防御${lv(s.guard,l,0.06)}`+(s.mobility?`　機動${s.mobility>0?'+':''}${s.mobility}`:'')+(s.apt?`　適性：${aptTxt(s.apt)}`:'');
-  return Object.entries(s).map(([k,v])=>k==='luck'?'運の偏り+'+Math.round(v*100)+'%':k==='apt'?`適性：${aptTxt(v)}`:`${STN[k]}+${v}`).join(' ');}
+  if(c.kind==='figure')return Object.keys(STN).map(k=>`${STN[k]}${lv(s[k],l)}`).join(' / ')+'<br>適性　'+Object.keys(ENVN).map(k=>`${ENVN[k]}<b>${s.apt[k]}</b>`).join(' ')+`　積載量${(s.cap||30)+2*l}`;
+  const tail=`${s.part?`　部位：${PARTN[s.part]}`:''}${s.weight?`　重量${s.weight}`:''}`;
+  if(c.kind==='weapon')return `${s.kind==='shoot'?'射撃':'近接'}武装　威力${lv(s.power,l,0.1)}`+tail;
+  if(c.kind==='armor'){const b=[];if(s.guard)b.push(`防御${lv(s.guard,l,0.06)}`);if(s.mobility)b.push(`機動${s.mobility>0?'+':''}${s.mobility}`);if(s.shoot)b.push(`射撃+${s.shoot}`);if(s.melee)b.push(`格闘+${s.melee}`);if(s.cap)b.push(`積載量+${s.cap}`);if(s.apt)b.push(`適性：${aptTxt(s.apt)}`);return b.join('　')+tail;}
+  return Object.entries(s).filter(([k])=>k!=='part'&&k!=='weight').map(([k,v])=>k==='luck'?'運の偏り+'+Math.round(v*100)+'%':k==='apt'?`適性：${aptTxt(v)}`:`${STN[k]}+${v}`).join(' ')+`　部位：チップ`;}
 const envTxt=f=>Object.entries((f.params&&f.params.env)||{land:1}).map(([k,v])=>`${ENVN[k]}${v<1?Math.round(v*100)+'%':''}`).join('・');
 function aptPreview(f){
-  const val=id=>{const x=$(id).value;return x?ITEMS.find(i=>i.id==x):null;};
-  const fg=val('#sf');if(!fg)return '';
-  const a=val('#sa'),c=val('#sc'),fs=CAT[fg.code].stats.apt;
-  const grade=(env)=>Object.keys(env).map(k=>{let st=0;[a,c].forEach(it=>{if(it)st+=((CAT[it.code].stats.apt||{})[k])||0;});
-    const g=GR[Math.max(0,Math.min(3,GR.indexOf(fs[k])+st))];return `${ENVN[k]}<b>${g}</b>`+(st?`（装備${st>0?'+':''}${st}）`:'');}).join(' ');
+  const fg=ITEMS.find(i=>i.id==$('#sf').value);if(!fg)return '';
+  const fs=CAT[fg.code].stats.apt,st={};
+  Object.values(eqOf(fg.id)).forEach(id=>{const it=itemOf(id);if(!it)return;const a=CAT[it.code].stats.apt||{};Object.keys(a).forEach(k=>st[k]=(st[k]||0)+a[k]);});
+  const grade=env=>Object.keys(env).map(k=>{const x=st[k]||0,g=GR[Math.max(0,Math.min(3,GR.indexOf(fs[k])+x))];return `${ENVN[k]}<b>${g}</b>`+(x?`（装備${x>0?'+':''}${x}）`:'');}).join(' ');
   const base=(f.params&&f.params.env)||{land:1};
   if(hasMap(f)){const pos=Object.fromEntries(f.params.map.locs.map(l=>[l.id,l]));
     return route.map(id=>`${id}：${grade(pos[id]&&pos[id].env?pos[id].env:base)}`).join('　');}
@@ -216,37 +234,50 @@ function opt(kind,sel,none){const l=ITEMS.filter(i=>CAT[i.code].kind===kind);
 function sortie(f,e){
   return `<div class="card" id="sortie" style="border-color:var(--accent)"><h3>出撃編成：${esc(f.title)}</h3>
   <label>インテレギア</label><select id="sf">${opt('figure',e?.figure_id,false)}</select>
-  <label>武装</label><select id="sw">${opt('weapon',e?.weapon_id,true)}</select>
-  <label>装甲</label><select id="sa">${opt('armor',e?.armor_id,true)}</select>
-  <label>強化チップ</label><select id="sc">${opt('chip',e?.chip_id,true)}</select>
+  <div id="fsum" style="margin-top:6px"></div>
   ${hasMap(f)?`<label>出撃経路</label><p id="rt" style="margin:0"></p><div class="row" style="margin-top:6px"><button class="sm" id="rb">ひとつ戻す</button><button class="sm" id="rr">やり直す</button></div>`:''}
   <p class="mute" id="apv" style="margin:10px 0 0"></p>
   <label>作戦</label><div class="tac">${Object.entries(TAC).map(([k,v])=>`<label><input type="radio" name="tc" value="${k}" ${(e?e.tactic:'steady')===k?'checked':''}><span><b>${v[0]}</b>　<span class="mute">${v[1]}</span></span></label>`).join('')}</div>
   <p class="msg" id="sm"></p><div class="row"><button class="pri" id="se">${e?'この編成に変更する':'出撃登録する'}</button>${SINGLE?'':'<button id="sx">閉じる</button>'}</div></div>`;}
 function bindSortie(){
   const f=FIELDS.find(x=>x.id===pick);
-  ['#sf','#sa','#sc'].forEach(q=>$(q).onchange=()=>sortieUpd(f));sortieUpd(f);
+  $('#sf').onchange=()=>sortieUpd(f);sortieUpd(f);
   if(hasMap(f)){$('#rb').onclick=()=>{route.pop();refreshMap(f);};$('#rr').onclick=()=>{route=[];refreshMap(f);};}
   if($('#sx'))$('#sx').onclick=()=>{pick=null;vField();};
   $('#se').onclick=async()=>{
-    const v=id=>{const x=$(id).value;return x?+x:null;};
     if(!$('#sf').value){$('#sm').className='msg err';$('#sm').textContent='インテレギアを選んでください。';return;}
     if(hasMap(f)&&!route.length){$('#sm').className='msg err';$('#sm').textContent='マップの上でスタート地点を選んでください。';return;}
     $('#se').disabled=true;
-    const r=await sb.rpc('ig_enter',{p_field:pick,p_fig:v('#sf'),p_w:v('#sw'),p_a:v('#sa'),p_c:v('#sc'),p_tactic:document.querySelector('input[name=tc]:checked').value,p_route:hasMap(f)?route:null});
+    const r=await sb.rpc('ig_enter',{p_field:pick,p_fig:+$('#sf').value,p_tactic:document.querySelector('input[name=tc]:checked').value,p_route:hasMap(f)?route:null});
     if(r.error){$('#se').disabled=false;$('#sm').className='msg err';$('#sm').textContent=r.error.message;return;}
     flash='出撃登録しました。次の更新で結果が出ます。';pick=null;await load();};
 }
 function vGarage(){
   const g=k=>ITEMS.filter(i=>CAT[i.code].kind===k);
-  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">買ったものはここに保管されます。強化は5段階まで。強化するほど次の費用が増えます。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。</p>${msgBox()}</div>`;
-  for(const k of Object.keys(KIND)){const l=g(k);
+  const where=it=>{const e=EQ.find(x=>x.item_id===it.id);if(!e)return '';const fg=itemOf(e.figure_id),sl=SLOTS.find(x=>x[0]===e.slot);return fg?`<div class="st" style="color:var(--ok)">装備中：${esc(fg.nickname||CAT[fg.code].name)}（${sl?sl[1]:''}）</div>`:'';};
+  const btns=(i,k)=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
+    return `<div class="row" style="margin-top:8px">${k==='figure'?`<button class="sm pri" data-ed="${i.id}">${editFig===i.id?'装備編集を閉じる':'装備を変更'}</button>`:''}${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>`;};
+  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">インテレギアごとに装備を付け替えます。部位は、右手・左手・右腕・左腕・頭・胴・脚・背中・チップ2枠です。装備の重量の合計が、インテレギアの積載量を超えることはできません。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。</p>${msgBox()}</div>`;
+  const figs=g('figure');
+  h+=`<h2 class="sec">インテレギア（${figs.length}）</h2>`;
+  h+=figs.length?`<div class="grid figs">${figs.map(i=>`<div class="item fig">${portrait(i.code)}<div class="bd"><b>${iname(i)}</b><div class="st">基本　${stLine(i)}</div><div class="st" style="margin-top:4px">総合　${effLine(i)}</div>${loadBar(i)}<div class="st">${eqSummary(i)}</div>${btns(i,'figure')}</div></div>`).join('')}</div>`:'<p class="mute">なし（「カタログ」で購入してください）</p>';
+  if(editFig&&itemOf(editFig)){const fg=itemOf(editFig),eq=eqOf(fg.id);
+    h+=`<div class="card" id="editor" style="border-color:var(--accent);margin-top:12px"><h3>装備編集：${iname(fg)}</h3>${loadBar(fg)}<div class="st">総合　${effLine(fg)}（積載が重いほど機動が下がります）</div><p class="msg" id="em"></p>
+    ${SLOTS.map(([sl,lb,part])=>{const cands=ITEMS.filter(i=>CAT[i.code].kind!=='figure'&&CAT[i.code].stats.part===part);
+      return `<label>${lb}</label><select data-slot="${sl}"><option value="">なし</option>${cands.map(i=>{const e=EQ.find(x=>x.item_id===i.id),other=e&&e.figure_id!==fg.id;
+        return `<option value="${i.id}" ${eq[sl]===i.id?'selected':''}>${iname(i).replace(/<[^>]*>/g,'')}　重量${CAT[i.code].stats.weight||0}${other?'（他の体に装備中）':''}</option>`;}).join('')}</select>`;}).join('')}
+    <div class="row" style="margin-top:12px"><button id="edx">閉じる</button></div></div>`;}
+  for(const k of ['weapon','armor','chip']){const l=g(k);
     h+=`<h2 class="sec">${KIND[k]}（${l.length}）</h2>`;
-    h+=l.length?`<div class="grid ${k==='figure'?'figs':''}">${l.map(i=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
-      return `<div class="item ${k==='figure'?'fig':''}">${k==='figure'?portrait(i.code)+'<div class="bd">':''}<b>${iname(i)}</b><div class="st">${stLine(i)}</div>
-      <div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>${k==='figure'?'</div>':''}</div>`}).join('')}</div>`:'<p class="mute">なし</p>';}
+    h+=l.length?`<div class="grid">${l.map(i=>`<div class="item"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>${where(i)}${btns(i,k)}</div>`).join('')}</div>`:'<p class="mute">なし</p>';}
   $('#main').innerHTML=h;
   const act=async(fn,ok)=>{const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();};
+  document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{editFig=editFig===+b.dataset.ed?null:+b.dataset.ed;flash='';vGarage();if(editFig)document.getElementById('editor')?.scrollIntoView({behavior:'smooth'});});
+  const edx=$('#edx');if(edx)edx.onclick=()=>{editFig=null;vGarage();};
+  document.querySelectorAll('select[data-slot]').forEach(sel=>sel.onchange=async()=>{
+    const r=await sb.rpc('ig_equip_set',{p_fig:editFig,p_slot:sel.dataset.slot,p_item:sel.value?+sel.value:null});
+    if(r.error){await load();const em=$('#em');if(em){em.className='msg err';em.textContent=r.error.message;}return;}
+    await load();document.getElementById('editor')?.scrollIntoView({block:'nearest'});});
   document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>act(()=>sb.rpc('ig_upgrade',{p_item:+b.dataset.up}),d=>`強化しました（Lv${d.level}、${d.cost}pt）。`));
   document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
