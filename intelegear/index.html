@@ -115,12 +115,14 @@ async function load(){
   CAT=Object.fromEntries(cat.data.map(c=>[c.code,c]));
   P=pl.data;
   if(!P){return register();}
-  const [it,ro,en,rk,eq]=await Promise.all([
+  const [it,ro,en,rk,eq,sy]=await Promise.all([
     sb.from('ig_items').select('*').order('id'),
     sb.from('ig_rounds').select('*').order('no',{ascending:false}).limit(3),
     sb.from('ig_entries').select('*'),
     sb.from('ig_players').select('name,earned').order('earned',{ascending:false}).limit(10),
-    sb.from('ig_equip').select('*')]);
+    sb.from('ig_equip').select('*'),
+    sb.from('ig_sync').select('*')]);
+  SYNC={};(sy.data||[]).forEach(x=>SYNC[x.figure_id]=x.value);
   ITEMS=it.data||[];ROUNDS=ro.data||[];ENT=en.data||[];RANK=rk.data||[];EQ=eq.data||[];
   const ids=ROUNDS.map(r=>r.id);
   const fl=ids.length?await sb.from('ig_fields').select('*').in('round_id',ids).order('id'):{data:[]};
@@ -156,7 +158,8 @@ function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();
 const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
 const PIC={f_arte:'img/f_arte.png'};
-let route=[],SINGLE=false,EQ=[],editFig=null;
+let route=[],SINGLE=false,EQ=[],editFig=null,SYNC={};
+const syncBar=i=>{const v=SYNC[i.id]||0;return `<div class="st" title="体の性能は変わらず、ソフトウェアが成長して得点と安定感が上がります">シンクロ率　<b>${v}%</b></div><div style="height:5px;background:var(--line,#334);border-radius:3px;margin:2px 0 4px"><div style="height:5px;width:${v}%;background:var(--accent,#4ad);border-radius:3px"></div></div>`;};
 const hasMap=f=>!!(f.params&&f.params.map);
 function mapInner(f){
   const M=f.params.map,act=pick===f.id,pos=Object.fromEntries(M.locs.map(l=>[l.id,l])),pts=route.map(id=>pos[id]).filter(Boolean);
@@ -257,10 +260,10 @@ function vGarage(){
   const where=it=>{const e=EQ.find(x=>x.item_id===it.id);if(!e)return '';const fg=itemOf(e.figure_id),sl=SLOTS.find(x=>x[0]===e.slot);return fg?`<div class="st" style="color:var(--ok)">装備中：${esc(fg.nickname||CAT[fg.code].name)}（${sl?sl[1]:''}）</div>`:'';};
   const btns=(i,k)=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
     return `<div class="row" style="margin-top:8px">${k==='figure'?`<button class="sm pri" data-ed="${i.id}">${editFig===i.id?'装備編集を閉じる':'装備を変更'}</button>`:''}${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>`;};
-  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">インテレギアごとに装備を付け替えます。部位は、右手・左手・右腕・左腕・頭・胴・脚・背中・チップ2枠です。装備の重量の合計が、インテレギアの積載量を超えることはできません。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。</p>${msgBox()}</div>`;
+  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">インテレギアごとに装備を付け替えます。部位は、右手・左手・右腕・左腕・頭・胴・脚・背中・チップ2枠です。装備の重量の合計が、インテレギアの積載量を超えることはできません。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。シンクロ率は、同じインテレギアで出撃するたびに少しずつ上がり、体の性能は変わらないまま、ソフトウェアが成長して得点と安定感が上がります。</p>${msgBox()}</div>`;
   const figs=g('figure');
   h+=`<h2 class="sec">インテレギア（${figs.length}）</h2>`;
-  h+=figs.length?`<div class="grid figs">${figs.map(i=>`<div class="item fig">${portrait(i.code)}<div class="bd"><b>${iname(i)}</b><div class="st">基本　${stLine(i)}</div><div class="st" style="margin-top:4px">総合　${effLine(i)}</div>${loadBar(i)}<div class="st">${eqSummary(i)}</div>${btns(i,'figure')}</div></div>`).join('')}</div>`:'<p class="mute">なし（「カタログ」で購入してください）</p>';
+  h+=figs.length?`<div class="grid figs">${figs.map(i=>`<div class="item fig">${portrait(i.code)}<div class="bd"><b>${iname(i)}</b><div class="st">基本　${stLine(i)}</div><div class="st" style="margin-top:4px">総合　${effLine(i)}</div>${loadBar(i)}${syncBar(i)}<div class="st">${eqSummary(i)}</div>${btns(i,'figure')}</div></div>`).join('')}</div>`:'<p class="mute">なし（「カタログ」で購入してください）</p>';
   if(editFig&&itemOf(editFig)){const fg=itemOf(editFig),eq=eqOf(fg.id);
     h+=`<div class="card" id="editor" style="border-color:var(--accent);margin-top:12px"><h3>装備編集：${iname(fg)}</h3>${loadBar(fg)}<div class="st">総合　${effLine(fg)}（積載が重いほど機動が下がります）</div><p class="msg" id="em"></p>
     ${SLOTS.map(([sl,lb,part])=>{const cands=ITEMS.filter(i=>CAT[i.code].kind!=='figure'&&CAT[i.code].stats.part===part);
@@ -303,9 +306,9 @@ function vRes(){
       if(rep.summary)h+=`<p>${esc(rep.summary)}</p>`;
       if(rep.team)h+=`<p class="mute">紅 ${rep.team.red} ／ 白 ${rep.team.white}　→ ${rep.team.winner==='red'?'紅':'白'}の勝利</p>`;
       if(rep.threshold)h+=`<p class="mute">生存基準 ${rep.threshold}</p>`;
-      if(mine)h+=`<p><b>あなた：${mine.rank}位 / ${rs.length}人</b>　${esc(mine.outcome||'')}　<span class="pt">+${mine.points_gained}pt</span>${mine.hyper?'<br><b style="color:#e8a317">⚡ ハイパーモード発動！</b>　<span class="mute">戦闘中、インテレギアとの絆が力に変わった</span>':''}${mine.note?'<br><span class="mute">'+esc(mine.note)+'</span>':''}</p>`;
+      if(mine)h+=`<p><b>あなた：${mine.rank}位 / ${rs.length}人</b>　${esc(mine.outcome||'')}　<span class="pt">+${mine.points_gained}pt</span>${mine.note?'<br><span class="mute">'+esc(mine.note)+'</span>':''}</p>`;
       const top=rs.slice(0,10);if(mine&&mine.rank>10)top.push(mine);
-      h+=`<table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}${x.hyper?' <span title="ハイパーモード発動" style="color:#e8a317">⚡</span>':''}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
+      h+=`<table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
       (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}<p>${esc(r.text)}</p></div>`);
       if((rep.editor_note||[]).length)h+=`<div class="card" style="background:var(--panel2);margin:10px 0 0"><b>編集部ノート</b>${rep.editor_note.map(t=>`<p style="margin:6px 0 0;font-size:14px">${esc(t)}</p>`).join('')}</div>`;
       h+='</div>';}
