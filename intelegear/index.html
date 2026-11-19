@@ -100,6 +100,27 @@ h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
 .pk .row2 .dot{flex:0 0 44px;background:#101733;border:1px solid var(--rule);border-radius:8px;padding:2px}
 .dl{display:inline-block;font-size:11px;border-radius:99px;padding:0 7px;margin:2px 3px 0 0;background:#1b2a4a}
 .dl.up{color:#6ee7a0}.dl.dn{color:#ff8a9b}
+nav button{position:relative;display:flex;align-items:center;gap:5px}
+nav .ni{font-size:15px}
+nav .nb{position:absolute;top:3px;right:4px;width:9px;height:9px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--bg)}
+@media(max-width:700px){
+ nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--panel);border-top:1px solid var(--rule);padding:4px 6px calc(4px + env(safe-area-inset-bottom));gap:2px;overflow:visible}
+ nav button{flex:1;flex-direction:column;gap:0;border:none!important;border-radius:10px;padding:5px 2px;background:transparent;font-size:11px;line-height:1.3}
+ nav button.on{background:var(--panel2);color:var(--accent)}
+ nav .ni{font-size:20px}
+ nav .nb{top:2px;right:calc(50% - 20px)}
+ main{padding-bottom:92px}
+}
+.stat{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 2px}
+.stat .pill{flex:1 1 220px;border:1px solid var(--rule);border-radius:10px;padding:8px 12px;background:var(--panel2)}
+.stat .pill b{display:block;font-size:12px;color:var(--mute);font-weight:400}
+.stat .pill.warn{border-color:var(--pink)}.stat .pill.good{border-color:var(--ok)}
+.guide ol{margin:6px 0 0;padding-left:1.3em}.guide li{margin:4px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.chips button{border-radius:99px;padding:3px 12px;font-size:13px}
+.chips button.on{background:var(--accent);color:#06121f;border-color:var(--accent);font-weight:700}
+details.how{margin:0 0 14px}details.how summary{cursor:pointer;color:var(--accent);padding:6px 2px}
+details.how p{margin:6px 0}
 .mapbox{position:relative;margin:4px 0 8px;line-height:0}
 .mapbox img{width:100%;border:1px solid var(--rule);border-radius:8px;display:block}
 .rtsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -168,7 +189,7 @@ async function load(){
   if(!P){return register();}
   const [it,ro,en,rk,eq,sy,so]=await Promise.all([
     sb.from('ig_items').select('*').order('id'),
-    sb.from('ig_rounds').select('*').order('no',{ascending:false}).limit(3),
+    sb.from('ig_rounds').select('*').order('no',{ascending:false}).limit(12),
     sb.from('ig_entries').select('*'),
     sb.from('ig_players').select('name,earned').order('earned',{ascending:false}).limit(10),
     sb.from('ig_equip').select('*'),
@@ -183,9 +204,9 @@ async function load(){
   const open=ROUNDS.find(r=>r.status==='open');
   COUNTS={};
   if(open){const c=await sb.rpc('ig_field_counts',{p_round:open.id});(c.data||[]).forEach(x=>COUNTS[x.field_id]=Number(x.n));}
-  const done=ROUNDS.find(r=>r.status==='judged');
+  const doneIds=ROUNDS.filter(r=>r.status==='judged').map(r=>r.id);
   RES=[];
-  if(done){const fi=FIELDS.filter(f=>f.round_id===done.id).map(f=>f.id);
+  if(doneIds.length){const fi=FIELDS.filter(f=>doneIds.includes(f.round_id)).map(f=>f.id);
     const rs=await sb.from('ig_results').select('*').in('field_id',fi).order('rank');RES=rs.data||[];
     const un=[...new Set(RES.filter(x=>x.user_id).map(x=>x.user_id))];
     if(un.length){const nm=await sb.from('ig_players').select('user_id,name').in('user_id',un);const mp=Object.fromEntries((nm.data||[]).map(p=>[p.user_id,p.name]));RES.forEach(x=>{if(x.user_id)x.name=mp[x.user_id]||'?';});}
@@ -204,8 +225,9 @@ function register(){
     tab='cat';await load();};
 }
 function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.points} pt</span>`;
-  const T=[['field','戦場'],['garage','ガレージ'],['cat','カタログ'],['res','結果']];
-  const n=$('#nav');n.hidden=false;n.innerHTML=T.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('');
+  const T=[['field','⚔️','戦場'],['garage','🔧','ガレージ'],['cat','🛒','カタログ'],['res','📜','結果']];
+  const op=ROUNDS.find(r=>r.status==='open'),needs=op&&!ENT.some(e=>e.round_id===op.id);
+  const n=$('#nav');n.hidden=false;n.innerHTML=T.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}"><span class="ni">${t[1]}</span><span class="nl">${t[2]}</span>${t[0]==='field'&&needs?'<i class="nb" title="出撃登録がまだです"></i>':''}</button>`).join('');
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;editFig=null;flash='';draw();});}
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
 const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
@@ -270,18 +292,39 @@ function aptPreview(f){
 const iname=it=>(it.nickname?esc(it.nickname)+'（'+esc(CAT[it.code].name)+'）':esc(CAT[it.code].name))+(it.level?` Lv${it.level}`:'');
 const msgBox=()=>flash?`<p class="msg ${flash.startsWith('!')?'err':'ok'}">${esc(flash.replace(/^!/,''))}</p>`:'';
 
+const remainMs=t=>new Date(t)-Date.now();
+const remainTxt=t=>{const ms=remainMs(t);if(ms<=0)return '締切を過ぎました';const m=Math.floor(ms/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60);return 'あと '+(d?d+'日 ':'')+h+'時間 '+(m%60)+'分';};
+const howTo=()=>`<details class="how card"><summary>遊び方・ルールのまとめ</summary>
+ <p><b>流れ</b>：カタログで買う → ガレージで装備 → 戦場で出撃登録 → 平日12:00の更新で結果が出る。</p>
+ <p><b>得点</b>：機体と装備の能力に、戦場の地形と作戦、運の振れ幅が加わって決まります。地形に合った経路と装備が有利です。</p>
+ <p><b>適性</b>：陸・水・宇宙で得意不得意があります。適性チップや専用装甲で1段階上げられます。</p>
+ <p><b>積載量</b>：装備の重量の合計は機体の積載量まで。重いほど機動が下がります。</p>
+ <p><b>シンクロ率</b>：同じ機体で出撃するたびに上がり、体の性能は同じまま、得点と安定感が上がります。</p>
+ <p><b>ポイント</b>：戦場で稼ぎ、購入や強化に使います。獲得ランキングは累計で、使っても減りません。</p>
+ <p><b>売却</b>：買った回のうちは購入価格、次の回からは半額。強化費は戻りません。</p></details>`;
 function vField(){
   const open=ROUNDS.find(r=>r.status==='open');
   if(!open){$('#main').innerHTML=`<div class="card"><h2>受付中の戦場はありません</h2><p class="mute">次の更新（平日12:00）をお待ちください。「結果」タブで前回の結果を見られます。</p></div>`;return;}
   const fs=FIELDS.filter(f=>f.round_id===open.id),mine=ENT.find(e=>e.round_id===open.id);
   SINGLE=fs.length===1;
   if(SINGLE&&pick!==fs[0].id){pick=fs[0].id;route=(mine&&mine.field_id===pick&&mine.route)?[...mine.route]:[];}
-  let h=`<div class="card"><h2>${esc(open.title)}</h2><p class="mute">出撃登録の締切：${fmt(open.deadline)}（次の更新で結果が出ます）。登録は何度でも変更できます。</p>${msgBox()}</div>`;
-  if(!ITEMS.some(i=>CAT[i.code].kind==='figure'))h+=`<div class="card"><b>まだインテレギアがいません。</b><p class="mute">「カタログ」タブで購入してください。</p></div>`;
+  const hasFig=ITEMS.some(i=>CAT[i.code].kind==='figure'),hasEq=EQ.length>0;
+  const mfig=mine&&itemOf(mine.figure_id);
+  let h=`<div class="card"><h2>${esc(open.title)}</h2>
+    <div class="stat"><div class="pill ${remainMs(open.deadline)<6*3600e3?'warn':''}"><b>締切</b>${fmt(open.deadline)}<br><span class="mute">${remainTxt(open.deadline)}</span></div>
+    <div class="pill ${mine?'good':'warn'}"><b>あなたの出撃</b>${mine?`✅ 登録済み<br><span class="mute">${mfig?esc(mfig.nickname||CAT[mfig.code].name):'?'}／${(TAC[mine.tactic]||['?'])[0]}${mine.route&&mine.route.length?'／経路 '+mine.route.join('→'):''}</span>`:'⚠ まだ登録していません<br><span class="mute">下で経路と機体を選んで「出撃登録する」</span>'}</div></div>
+    <p class="mute" style="margin:8px 0 0">登録は締切まで何度でも変更できます。次の更新で結果が出ます。</p>${msgBox()}</div>`;
+  if(!hasFig||!hasEq)h+=`<div class="card guide" style="border-color:var(--pink)"><h3>はじめての方へ　出撃までの3ステップ</h3><ol>
+    <li class="${hasFig?'mute':''}"><b>カタログ</b>でインテレギアを1体と、武器を買う ${hasFig?'✅':''}</li>
+    <li class="${hasEq?'mute':''}"><b>ガレージ</b>で、買った装備を部位に付ける ${hasEq?'✅':''}</li>
+    <li><b>戦場</b>のマップで経路を選び、「出撃登録する」を押す</li></ol>
+    <div class="row" style="margin-top:8px">${hasFig?'':'<button class="sm pri" data-go="cat">カタログへ</button>'}${hasFig&&!hasEq?'<button class="sm pri" data-go="garage">ガレージへ</button>':''}</div></div>`;
   h+=fs.map(f=>`<div class="card"><h3><span class="badge">${RULE[f.rule]}</span><span class="badge" style="border-color:var(--pink);color:var(--pink)">環境：${envTxt(f)}</span>${esc(f.title)}</h3>${hasMap(f)?mapBlock(f):''}<p>${esc(f.brief)}</p>
     <div class="row"><span class="mute">参加登録 ${COUNTS[f.id]||0}人</span><span class="sp"></span>${mine&&mine.field_id===f.id?'<span class="badge" style="border-color:var(--ok);color:var(--ok)">出撃登録済み</span>':''}${SINGLE?'':`<button class="pri" data-f="${f.id}">${mine&&mine.field_id===f.id?'編成を変更':'ここに出撃する'}</button>`}</div></div>`).join('');
   if(pick){const f=FIELDS.find(x=>x.id===pick);h+=sortie(f,mine&&mine.field_id===f.id?mine:null);}
+  h+=howTo();
   $('#main').innerHTML=h;
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{tab=b.dataset.go;draw();});
   document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{pick=+b.dataset.f;flash='';{const ff=FIELDS.find(x=>x.id===pick);route=(mine&&mine.field_id===pick&&mine.route)?[...mine.route]:[];}vField();document.getElementById('sortie')?.scrollIntoView({behavior:'smooth'});});
   if(pick)bindSortie();
   fs.filter(hasMap).forEach(bindMap);
@@ -374,21 +417,36 @@ function vGarage(){
   document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
+const CATS=[['all','すべて'],['figure','インテレギア'],['weapon','武装'],['shield','盾'],['head','頭'],['arm','腕'],['body','胴'],['leg','脚'],['back','背中'],['chip','チップ']];
+const catKey=c=>c.kind==='figure'?'figure':c.kind==='weapon'?'weapon':c.kind==='chip'?'chip':(c.stats.part==='hand'?'shield':c.stats.part);
+let CF='all',CAFF=false;
 function vCat(){
-  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは、1アカウントにつき各1体までです。持っているものはソールドアウトになります（売却すると再び買えます）。武装・防具・チップは何個でも買えます。</p>${msgBox()}</div>`;
-  for(const k of Object.keys(KIND)){h+=`<h2 class="sec">${KIND[k]}</h2><div class="grid ${k==='figure'?'figs':''}">`+Object.values(CAT).filter(c=>c.kind===k).map(c=>
-    `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-    ${k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`).join('')+'</div>';}
+  const all=Object.values(CAT),owned=c=>ITEMS.filter(i=>i.code===c.code).length;
+  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは1アカウントにつき各1体まで（持っているものはソールドアウト、売却すると再び買えます）。武装・防具・チップは何個でも買えます。</p>${msgBox()}
+   <div class="chips">${CATS.map(([k,l])=>`<button class="${CF===k?'on':''}" data-cf="${k}">${l}${k==='all'?'':'（'+all.filter(c=>catKey(c)===k).length+'）'}</button>`).join('')}</div>
+   <label style="display:flex;gap:6px;align-items:center;margin:0;color:var(--ink)"><input type="checkbox" id="caf" ${CAFF?'checked':''}> 今のポイントで買えるものだけ表示（所持 ${P.points}pt）</label></div>`;
+  const list=all.filter(c=>(CF==='all'||catKey(c)===CF)&&(!CAFF||(P.points>=c.price&&!(c.kind==='figure'&&SOLD.includes(c.code)))));
+  const order=CATS.slice(1).map(x=>x[0]);
+  for(const key of order){const l=list.filter(c=>catKey(c)===key);if(!l.length)continue;
+    const lbl=CATS.find(x=>x[0]===key)[1];
+    h+=`<h2 class="sec">${lbl}</h2><div class="grid ${key==='figure'?'figs':''}">`+l.map(c=>{const k=c.kind,o=owned(c);
+      return `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b>${o&&k!=='figure'?` <span class="tag">所持 ${o}</span>`:''}<div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
+      ${k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`;}).join('')+'</div>';}
+  if(!list.length)h+='<p class="mute">条件に合う商品がありません。</p>';
   $('#main').innerHTML=h;
-  document.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await sb.rpc('ig_buy',{p_code:b.dataset.b});
-    flash=r.error?'!'+r.error.message:`${CAT[b.dataset.b].name}を購入しました。ガレージに入りました。`;await load();});
+  document.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{CF=b.dataset.cf;flash='';vCat();});
+  $('#caf').onchange=e=>{CAFF=e.target.checked;vCat();};
+  document.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;const y=window.scrollY;const r=await sb.rpc('ig_buy',{p_code:b.dataset.b});
+    flash=r.error?'!'+r.error.message:`${CAT[b.dataset.b].name}を購入しました。ガレージに入りました。`;await load();window.scrollTo(0,y);});
 }
+let RSEL=null;
 function vRes(){
-  const done=ROUNDS.find(r=>r.status==='judged');
+  const judged=ROUNDS.filter(r=>r.status==='judged');
+  const done=judged.find(r=>r.id===RSEL)||judged[0];
   let h='';
   if(!done)h=`<div class="card"><h2>まだ結果はありません</h2><p class="mute">最初の更新をお待ちください。</p></div>`;
   else{
-    h=`<div class="card"><h2>${esc(done.title)}　戦場の記録</h2><p class="mute">${fmt(done.published_at)} 公開。NPCは運営が用意した参加者です。</p></div>`;
+    h=`<div class="card"><h2>${esc(done.title)}　戦場の記録</h2><p class="mute">${fmt(done.published_at)} 公開。NPCは運営が用意した参加者です。</p>${judged.length>1?`<div class="chips">${judged.map(r=>`<button class="${r.id===done.id?'on':''}" data-rs="${r.id}">${esc(r.title)}</button>`).join('')}</div>`:''}</div>`;
     for(const f of FIELDS.filter(f=>f.round_id===done.id)){
       const rs=RES.filter(x=>x.field_id===f.id),mine=rs.find(x=>x.user_id===P.user_id),rep=f.report||{};
       const w=rs[0],wn=w?(w.name||w.npc_name):'';
@@ -412,6 +470,7 @@ function vRes(){
   }
   h+=`<h2 class="sec">獲得ポイントランキング</h2><div class="card"><p class="mute">購入や強化で使っても減りません（戦場で稼いだ累計）。</p><table>${RANK.map((p,i)=>`<tr class="${p.name===P.name?'me':''}"><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.earned}pt</td></tr>`).join('')}</table></div>`;
   $('#main').innerHTML=h;
+  document.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{RSEL=+b.dataset.rs;vRes();window.scrollTo(0,0);});
 }
 document.addEventListener('click',e=>{const im=e.target.closest('.pt-frame img,.pt-frame svg');if(!im||im.closest('.fc'))return;
   const o=document.createElement('div');o.id='lb';
