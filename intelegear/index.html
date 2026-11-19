@@ -303,9 +303,9 @@ function vRes(){
       if(rep.summary)h+=`<p>${esc(rep.summary)}</p>`;
       if(rep.team)h+=`<p class="mute">紅 ${rep.team.red} ／ 白 ${rep.team.white}　→ ${rep.team.winner==='red'?'紅':'白'}の勝利</p>`;
       if(rep.threshold)h+=`<p class="mute">生存基準 ${rep.threshold}</p>`;
-      if(mine)h+=`<p><b>あなた：${mine.rank}位 / ${rs.length}人</b>　${esc(mine.outcome||'')}　<span class="pt">+${mine.points_gained}pt</span>${mine.note?'<br><span class="mute">'+esc(mine.note)+'</span>':''}</p>`;
+      if(mine)h+=`<p><b>あなた：${mine.rank}位 / ${rs.length}人</b>　${esc(mine.outcome||'')}　<span class="pt">+${mine.points_gained}pt</span>${mine.hyper?'<br><b style="color:#e8a317">⚡ ハイパーモード発動！</b>　<span class="mute">戦闘中、インテレギアとの絆が力に変わった</span>':''}${mine.note?'<br><span class="mute">'+esc(mine.note)+'</span>':''}</p>`;
       const top=rs.slice(0,10);if(mine&&mine.rank>10)top.push(mine);
-      h+=`<table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
+      h+=`<table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}${x.hyper?' <span title="ハイパーモード発動" style="color:#e8a317">⚡</span>':''}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
       (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}<p>${esc(r.text)}</p></div>`);
       if((rep.editor_note||[]).length)h+=`<div class="card" style="background:var(--panel2);margin:10px 0 0"><b>編集部ノート</b>${rep.editor_note.map(t=>`<p style="margin:6px 0 0;font-size:14px">${esc(t)}</p>`).join('')}</div>`;
       h+='</div>';}
