@@ -138,11 +138,21 @@ function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.point
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;flash='';draw();});}
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
+const ENVN={land:'陸',water:'水',space:'宇'},GR=['C','B','A','S'];
+const aptTxt=a=>Object.entries(a||{}).map(([k,v])=>`${ENVN[k]}+${v}段階`).join(' ');
 function stLine(it){const c=CAT[it.code],s=c.stats,l=it.level;
-  if(c.kind==='figure')return Object.keys(STN).map(k=>`${STN[k]}${lv(s[k],l)}`).join(' / ');
+  if(c.kind==='figure')return Object.keys(STN).map(k=>`${STN[k]}${lv(s[k],l)}`).join(' / ')+'<br>適性　'+Object.keys(ENVN).map(k=>`${ENVN[k]}<b>${s.apt[k]}</b>`).join(' ');
   if(c.kind==='weapon')return `${s.kind==='shoot'?'射撃':'近接'}武装　威力${lv(s.power,l,0.1)}`;
-  if(c.kind==='armor')return `防御${lv(s.guard,l,0.06)}`+(s.mobility?`　機動${s.mobility>0?'+':''}${s.mobility}`:'');
-  return Object.entries(s).map(([k,v])=>k==='luck'?'運の偏り+'+Math.round(v*100)+'%':`${STN[k]}+${v}`).join(' ');}
+  if(c.kind==='armor')return `防御${lv(s.guard,l,0.06)}`+(s.mobility?`　機動${s.mobility>0?'+':''}${s.mobility}`:'')+(s.apt?`　適性：${aptTxt(s.apt)}`:'');
+  return Object.entries(s).map(([k,v])=>k==='luck'?'運の偏り+'+Math.round(v*100)+'%':k==='apt'?`適性：${aptTxt(v)}`:`${STN[k]}+${v}`).join(' ');}
+const envTxt=f=>Object.entries((f.params&&f.params.env)||{land:1}).map(([k,v])=>`${ENVN[k]}${v<1?Math.round(v*100)+'%':''}`).join('・');
+function aptPreview(f){
+  const val=id=>{const x=$(id).value;return x?ITEMS.find(i=>i.id==x):null;};
+  const fg=val('#sf');if(!fg)return '';
+  const a=val('#sa'),c=val('#sc'),fs=CAT[fg.code].stats.apt;
+  const env=(f.params&&f.params.env)||{land:1};
+  return Object.keys(env).map(k=>{let st=0;[a,c].forEach(it=>{if(it)st+=((CAT[it.code].stats.apt||{})[k])||0;});
+    const g=GR[Math.max(0,Math.min(3,GR.indexOf(fs[k])+st))];return `${ENVN[k]}：<b>${g}</b>`+(st?`（装備で${st>0?'+':''}${st}段階）`:'');}).join('　');}
 const iname=it=>(it.nickname?esc(it.nickname)+'（'+esc(CAT[it.code].name)+'）':esc(CAT[it.code].name))+(it.level?` Lv${it.level}`:'');
 const msgBox=()=>flash?`<p class="msg ${flash.startsWith('!')?'err':'ok'}">${esc(flash.replace(/^!/,''))}</p>`:'';
 
@@ -152,7 +162,7 @@ function vField(){
   const fs=FIELDS.filter(f=>f.round_id===open.id),mine=ENT.find(e=>e.round_id===open.id);
   let h=`<div class="card"><h2>${esc(open.title)}</h2><p class="mute">出撃登録の締切：${fmt(open.deadline)}（次の更新で結果が出ます）。登録は何度でも変更できます。</p>${msgBox()}</div>`;
   if(!ITEMS.some(i=>CAT[i.code].kind==='figure'))h+=`<div class="card"><b>まだインテレギアがいません。</b><p class="mute">「カタログ」タブで購入してください。</p></div>`;
-  h+=fs.map(f=>`<div class="card"><h3><span class="badge">${RULE[f.rule]}</span>${esc(f.title)}</h3><p>${esc(f.brief)}</p>
+  h+=fs.map(f=>`<div class="card"><h3><span class="badge">${RULE[f.rule]}</span><span class="badge" style="border-color:var(--pink);color:var(--pink)">環境：${envTxt(f)}</span>${esc(f.title)}</h3><p>${esc(f.brief)}</p>
     <div class="row"><span class="mute">参加登録 ${COUNTS[f.id]||0}人</span><span class="sp"></span>${mine&&mine.field_id===f.id?'<span class="badge" style="border-color:var(--ok);color:var(--ok)">出撃登録済み</span>':''}<button class="pri" data-f="${f.id}">${mine&&mine.field_id===f.id?'編成を変更':'ここに出撃する'}</button></div></div>`).join('');
   if(pick){const f=FIELDS.find(x=>x.id===pick);h+=sortie(f,mine&&mine.field_id===f.id?mine:null);}
   $('#main').innerHTML=h;
@@ -167,9 +177,12 @@ function sortie(f,e){
   <label>武装</label><select id="sw">${opt('weapon',e?.weapon_id,true)}</select>
   <label>装甲</label><select id="sa">${opt('armor',e?.armor_id,true)}</select>
   <label>強化チップ</label><select id="sc">${opt('chip',e?.chip_id,true)}</select>
+  <p class="mute" id="apv" style="margin:10px 0 0"></p>
   <label>作戦</label><div class="tac">${Object.entries(TAC).map(([k,v])=>`<label><input type="radio" name="tc" value="${k}" ${(e?e.tactic:'steady')===k?'checked':''}><span><b>${v[0]}</b>　<span class="mute">${v[1]}</span></span></label>`).join('')}</div>
   <p class="msg" id="sm"></p><div class="row"><button class="pri" id="se">${e?'この編成に変更する':'出撃登録する'}</button><button id="sx">閉じる</button></div></div>`;}
 function bindSortie(){
+  const f=FIELDS.find(x=>x.id===pick),upd=()=>{const p=aptPreview(f);$('#apv').innerHTML=p?`この戦場（${envTxt(f)}）での適性　${p}`:'';};
+  ['#sf','#sa','#sc'].forEach(s=>$(s).onchange=upd);upd();
   $('#sx').onclick=()=>{pick=null;vField();};
   $('#se').onclick=async()=>{
     const v=id=>{const x=$(id).value;return x?+x:null;};
