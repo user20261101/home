@@ -152,6 +152,7 @@ function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.point
   const n=$('#nav');n.hidden=false;n.innerHTML=T.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}">${t[1]}</button>`).join('');
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;flash='';draw();});}
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
+const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
 const PIC={f_arte:'img/f_arte.png'};
 let route=[];
@@ -236,16 +237,16 @@ function bindSortie(){
 }
 function vGarage(){
   const g=k=>ITEMS.filter(i=>CAT[i.code].kind===k);
-  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">買ったものはここに保管されます。強化は5段階まで。強化するほど次の費用が増えます。</p>${msgBox()}</div>`;
+  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">買ったものはここに保管されます。強化は5段階まで。強化するほど次の費用が増えます。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。</p>${msgBox()}</div>`;
   for(const k of Object.keys(KIND)){const l=g(k);
     h+=`<h2 class="sec">${KIND[k]}（${l.length}）</h2>`;
     h+=l.length?`<div class="grid ${k==='figure'?'figs':''}">${l.map(i=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
       return `<div class="item ${k==='figure'?'fig':''}">${k==='figure'?portrait(i.code)+'<div class="bd">':''}<b>${iname(i)}</b><div class="st">${stLine(i)}</div>
-      <div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${Math.floor(c.price/2)}pt</button></div>${k==='figure'?'</div>':''}</div>`}).join('')}</div>`:'<p class="mute">なし</p>';}
+      <div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>${k==='figure'?'</div>':''}</div>`}).join('')}</div>`:'<p class="mute">なし</p>';}
   $('#main').innerHTML=h;
   const act=async(fn,ok)=>{const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();};
   document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>act(()=>sb.rpc('ig_upgrade',{p_item:+b.dataset.up}),d=>`強化しました（Lv${d.level}、${d.cost}pt）。`));
-  document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{if(confirm('売却しますか？（購入価格の半額）'))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);});
+  document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
 function vCat(){
