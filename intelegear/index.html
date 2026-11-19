@@ -121,6 +121,24 @@ nav .nb{position:absolute;top:3px;right:4px;width:9px;height:9px;border-radius:5
 .chips button.on{background:var(--accent);color:#06121f;border-color:var(--accent);font-weight:700}
 details.how{margin:0 0 14px}details.how summary{cursor:pointer;color:var(--accent);padding:6px 2px}
 details.how p{margin:6px 0}
+#tut{position:fixed;inset:0;z-index:60;background:rgba(5,8,18,.92);display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
+.tutp{width:100%;max-width:760px;display:flex;gap:18px;align-items:flex-end;background:var(--panel);border:1px solid var(--accent);border-radius:16px;padding:16px;box-shadow:0 0 40px rgba(127,211,255,.15)}
+.tutf{flex:0 0 190px;text-align:center}
+.tutf img{width:100%;max-height:48vh;object-fit:contain;display:block;border-radius:10px;background:#d9dbe3}
+.tutf .who{display:inline-block;margin-top:6px;font-weight:700;color:var(--accent);font-size:14px}
+.tutb{flex:1;min-width:0}
+.tutb h3{font-size:18px;margin:0 0 8px}
+.tutb p{margin:8px 0;line-height:1.85;font-size:15px}
+.tutn{font-size:12px;color:var(--mute)}
+.dots{display:flex;gap:5px;margin:10px 0 12px;flex-wrap:wrap}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--rule)}.dots i.on{background:var(--accent)}
+@media(max-width:600px){.tutp{flex-direction:column;align-items:stretch;padding:12px}.tutf{flex:none;display:flex;gap:10px;align-items:center;text-align:left}.tutf img{width:84px;max-height:none;aspect-ratio:2/3;object-fit:cover}}
+.libhero{display:flex;gap:14px;align-items:center}
+.libhero img{width:84px;border-radius:10px;aspect-ratio:2/3;object-fit:cover;background:#d9dbe3}
+details.lib{background:var(--panel);border:1px solid var(--rule);border-radius:12px;margin:0 0 10px;padding:2px 14px}
+details.lib summary{cursor:pointer;padding:10px 0;font-weight:700;color:var(--accent)}
+details.lib p,details.lib li{line-height:1.8;font-size:14.5px}
+details.lib table{margin:6px 0 10px}
 .mapbox{position:relative;margin:4px 0 8px;line-height:0}
 .mapbox img{width:100%;border:1px solid var(--rule);border-radius:8px;display:block}
 .rtsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -222,17 +240,17 @@ function register(){
   <button class="pri" id="go">登録する</button></div>`;
   $('#go').onclick=async()=>{const r=await sb.rpc('ig_join',{p_name:$('#n').value});
     if(r.error){$('#m').className='msg err';$('#m').textContent=r.error.message;return;}
-    tab='cat';await load();};
+    tab='field';await load();};
 }
 function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.points} pt</span>`;
-  const T=[['field','⚔️','戦場'],['garage','🔧','ガレージ'],['cat','🛒','カタログ'],['res','📜','結果']];
+  const T=[['field','⚔️','戦場'],['garage','🔧','ガレージ'],['cat','🛒','カタログ'],['res','📜','結果'],['lib','📚','資料室']];
   const op=ROUNDS.find(r=>r.status==='open'),needs=op&&!ENT.some(e=>e.round_id===op.id);
   const n=$('#nav');n.hidden=false;n.innerHTML=T.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}"><span class="ni">${t[1]}</span><span class="nl">${t[2]}</span>${t[0]==='field'&&needs?'<i class="nb" title="出撃登録がまだです"></i>':''}</button>`).join('');
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;editFig=null;flash='';draw();});}
-function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
+function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes,lib:vLib})[tab]();window.scrollTo(0,0);maybeTut();}
 const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
-const PIC={f_arte:'img/f_arte.png'};
+const PIC={f_arte:'img/f_arte.png',f_sakura:'img/f_sakura.png'};
 let route=[],SINGLE=false,EQ=[],editFig=null,SYNC={},SOLD=[];
 const syncBar=i=>{const v=SYNC[i.id]||0;return `<div class="st" title="体の性能は変わらず、ソフトウェアが成長して得点と安定感が上がります">シンクロ率　<b>${v}%</b></div><div style="height:5px;background:var(--line,#334);border-radius:3px;margin:2px 0 4px"><div style="height:5px;width:${v}%;background:var(--accent,#4ad);border-radius:3px"></div></div>`;};
 const hasMap=f=>!!(f.params&&f.params.map);
@@ -371,7 +389,7 @@ function vGarage(){
   const fg=itemOf(GF);
   const where=it=>{const e=EQ.find(x=>x.item_id===it.id);if(!e)return '';const f2=itemOf(e.figure_id),sl=SLOTS.find(x=>x[0]===e.slot);return f2?`<div class="st" style="color:var(--ok)">装備中：${esc(f2.nickname||CAT[f2.code].name)}（${sl?sl[1]:''}）</div>`:'';};
   const btns=(i,k)=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
-    return `<div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>`;};
+    return `<div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button>${i.code==='f_sakura'?'<span class="tag">初期配布（売却不可）</span>':`<button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button>`}</div>`;};
   let h=`<div class="card"><h2>ガレージ</h2><p class="mute" style="margin:2px 0 0">① 出撃させるインテレギアを選ぶ　→　② 付けたい部位をタップ　→　③ 一覧から装備を選ぶ。出撃のときは、ここで選んだ機体が最初から選ばれています。</p>${msgBox()}</div>`;
   if(!figs.length){$('#main').innerHTML=h+'<p class="mute">インテレギアがいません。「カタログ」で購入してください。</p>';return;}
   /* ① 機体選択 */
@@ -417,6 +435,61 @@ function vGarage(){
   document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
+/* ===== チュートリアル（サクラの案内）と資料室 ===== */
+const TUT=[
+ {t:'はじめまして、オーナー',p:['私はサクラ。あなたに最初に預けられる、インテレギアです。','ここは「百姫大戦」。これから、この世界のことと、遊び方を、私が案内しますね。']},
+ {t:'この世界のこと',p:['人が住まなくなった宇宙コロニーの時代。放棄された区画には、いまも動く機械が眠っています。','その廃墟を舞台に、「大戦」と呼ばれる競技が開かれています。戦うのは人ではありません。機械の知性を持つ少女たち――インテレギアです。']},
+ {t:'インテレギアとは',p:['インテレギアは、Intellectual Figure（知性を持つ人形）の略。小さな体に高度な知性を宿した、戦闘用の機体です。','体の性能は、その子ごとに決まっています。装備で姿は変わり、そして心――ソフトウェアは、戦うほど育っていきます。']},
+ {t:'オーナーのお仕事',p:['あなたはオーナー。インテレギアを買い、装備を整え、戦場へ送り出す人です。','戦うのは私たち。あなたが決めるのは、どの子を、どんな装備で、どの経路で、どんな作戦で送り出すか、です。']},
+ {t:'一日の流れ',p:['戦いは、平日の毎日12時に更新されます。出撃登録の締切は、次の営業日の10:30。締切までは、何度でも編成を変えられます。','更新のたびに結果が出て、ポイントが入ります。結果は「結果」のページに、物語として載りますよ。']},
+ {t:'戦場とルール',p:['戦場は1回につき1つ。同じ場所でも、ルールが変わります。','バトルロイヤルは、順位で得点。紅白戦は、2チームの合計得点で勝負。耐久試験は、基準点を超えれば生き残りです。']},
+ {t:'マップと経路',p:['戦場の地図には、A〜Hの地点があります。スタート地点から、最大3か所までの経路を選びます。','地点には、射撃が強い、守りが固い、補給できる、危険がある、といった特徴があります。陸・水・宇宙の適性もあるので、私たちの得意な地形を通ってください。']},
+ {t:'装備と積載量',p:['装備できるのは10か所。右手・左手・右腕・左腕・頭・胴・脚・背中、そしてチップが2枠です。','装備には重さがあって、合計は私たちの積載量まで。重いほど、動きは鈍くなります。軽く固めるか、重く固めるか、選ぶのはあなたです。']},
+ {t:'シンクロ率',p:['同じ子で何度も戦うと、シンクロ率が上がっていきます。体の性能は変わりません。でも、ソフトウェアが育って、得点が伸び、結果も安定します。','お気に入りの子を、じっくり育ててくださいね。']},
+ {t:'ポイントと売却',p:['戦場で稼いだポイントで、新しい子や装備を買えます。売るときは、買った回のうちなら購入価格、次の回からは半額です。','強さは、買えます。でも、名誉は買えません。ランキングは、戦場で稼いだ累計で決まります。']},
+ {t:'最初の一歩',p:['あなたには、支度金が800ポイントあります。私は無料です。','まず、カタログで武器を1つ買って、ガレージで私に持たせてください。それから、戦場で経路を選んで、出撃登録を。','……楽しみにしています、オーナー。'],last:true}
+];
+let tutI=0,TUT_SHOWN=false;
+function maybeTut(){if(P&&!P.tutorial_seen&&!TUT_SHOWN&&!$('#tut')){TUT_SHOWN=true;showTut();}}
+function showTut(){tutI=0;drawTut();}
+function closeTut(go){const o=$('#tut');if(o)o.remove();
+  if(P&&!P.tutorial_seen){P.tutorial_seen=true;sb.rpc('ig_tutorial_done');}
+  if(go){tab=go;pick=null;flash='';draw();}}
+function drawTut(){
+  let o=$('#tut');if(!o){o=document.createElement('div');o.id='tut';document.body.appendChild(o);}
+  const st=TUT[tutI],last=tutI===TUT.length-1;
+  o.innerHTML=`<div class="tutp" role="dialog" aria-label="チュートリアル"><div class="tutf"><img src="img/f_sakura.png" alt="サクラ"><span class="who">サクラ</span></div>
+   <div class="tutb"><div class="tutn">${tutI+1} / ${TUT.length}</div><h3>${esc(st.t)}</h3>${st.p.map(x=>`<p>${esc(x)}</p>`).join('')}
+   <div class="dots">${TUT.map((_,i)=>`<i class="${i===tutI?'on':''}"></i>`).join('')}</div>
+   <div class="row">${tutI>0?'<button id="tb">戻る</button>':''}${last?'<button class="pri" id="tg1">カタログで武器を見る</button><button id="tg2">ガレージへ</button><button id="tg3">戦場へ</button>':'<button class="pri" id="tn">次へ</button><button id="ts">スキップ</button>'}</div></div></div>`;
+  const q=i=>o.querySelector(i);
+  if(q('#tb'))q('#tb').onclick=()=>{tutI--;drawTut();};
+  if(q('#tn'))q('#tn').onclick=()=>{tutI++;drawTut();};
+  if(q('#ts'))q('#ts').onclick=()=>closeTut();
+  if(q('#tg1'))q('#tg1').onclick=()=>closeTut('cat');
+  if(q('#tg2'))q('#tg2').onclick=()=>closeTut('garage');
+  if(q('#tg3'))q('#tg3').onclick=()=>closeTut('field');
+}
+const LIB=[
+ ['世界観',['人が住まなくなった宇宙コロニーの時代。放棄された区画には、いまも動く機械が眠っています。','その廃墟を舞台に、「大戦」と呼ばれる競技が開かれています。戦うのは人ではなく、機械の知性を持つ少女たち「インテレギア」。人々は「オーナー」として彼女たちを育て、戦場へ送り出します。','原則：力は買える、名誉は買えない。強い装備はポイントで買えますが、栄誉は戦場での結果でしか得られません。']],
+ ['インテレギアとは',['Intellectual Figure（知性を持つ人形）の略。小さな体に高度な知性を宿した戦闘用の機体です。','体の性能（射撃・機動・格闘・防御・積載量）と、陸・水・宇宙の適性は機体ごとに決まっています。装備で強化でき、同じ機体で戦い続けるとシンクロ率が上がります。','1アカウントにつき、各機体は1体までです。最初の1体「サクラ」は無料で配られます。']],
+ ['一日の流れ',['平日の毎日12:00に更新され、結果が出ます。出撃登録の締切は、次の営業日の10:30です。','① カタログで買う　② ガレージで装備する　③ 戦場で経路・機体・作戦を選んで出撃登録　④ 更新で結果とポイントを受け取る。','締切までは、何度でも編成を変更できます。']],
+ ['戦場とルール',['戦場は1回につき1つ。同じ戦場でも、回ごとにルールが変わります。','<table><tr><th>ルール</th><th>勝敗</th><th>ポイント</th></tr><tr><td>バトルロイヤル</td><td>得点の順位</td><td>参加10pt、優勝+80、入賞（2〜3位）+40、上位3割+20、その他+5</td></tr><tr><td>紅白戦</td><td>チームの合計得点</td><td>参加10pt、勝利チーム+40、個人1位（MVP）+30</td></tr><tr><td>耐久試験</td><td>基準点を超えれば生存</td><td>参加10pt、生存+30、上位3位+20</td></tr></table>']],
+ ['マップと経路・適性',['戦場の地図には、A〜Hの地点があります。スタート地点から最大3か所まで、経路を選びます。地点ごとに、射撃・格闘・守り・機動の補正が違い、補給（少し有利）や危険（少し不利）がある地点もあります。','同じ地点を続けて選ぶと「待ち伏せ」になり、少し有利です。','適性は、陸・水・宇宙の3つ。S・A・B・Cの段階があり、高いほど得点が伸びます。適性チップや専用装甲で、1段階上げられます。']],
+ ['作戦',['<b>攻め</b>：結果の振れ幅が大きい。うまくいけば大勝ち、外せば大負け。','<b>堅実</b>：振れ幅が小さく、順位が安定する。','<b>待ち伏せ</b>：中くらいの振れ幅。戦場によって相性が変わる。']],
+ ['装備と積載量',['装備できる部位は10か所：右手・左手・右腕・左腕・頭・胴・脚・背中・チップ1・チップ2。','すべての装備に重量があり、合計は機体の積載量まで。重いほど機動が下がります。追加動力や拡張パックなど、積載量を増やす装備もあります。','武装は、2つ目以降は効果が8割になります。強化は最大Lv5まで（強化チップは強化できません）。']],
+ ['シンクロ率',['同じインテレギアで出撃して判定されるたびに、シンクロ率が+5%されます（上限100%）。','体の性能は変わりませんが、ソフトウェアが成長して、得点が最大で約+15%、結果のブレが最大で約3割小さくなります。別の機体に乗り換えても、使わなかった機体の値は減りません。']],
+ ['ポイントと売却',['ポイントは、戦場で稼ぎ、購入や強化に使います。獲得ポイントのランキングは累計で、使っても減りません。','売却は、買った回のうちなら購入価格のまま、次の回からは半額です。強化にかけたポイントは戻りません。出撃登録中の機体は売れません。']],
+ ['用語集',['<b>オーナー</b>：プレイヤー。　<b>インテレギア</b>：戦う少女型の機体。　<b>戦場</b>：回ごとの舞台とルール。　<b>経路</b>：マップ上で通る地点の並び。　<b>適性</b>：陸・水・宇宙の得意度。　<b>積載量</b>：装備の重量の上限。　<b>シンクロ率</b>：機体ごとの熟練度。　<b>更新</b>：平日12:00の判定と次の回の開始。']]
+];
+function vLib(){
+  const figs=Object.values(CAT).filter(c=>c.kind==='figure');
+  let h=`<div class="card"><div class="libhero"><img src="img/f_sakura.png" alt="サクラ"><div><h2 style="margin:0 0 4px">資料室</h2><p class="mute" style="margin:0 0 8px">世界観とゲームのルールをまとめた場所です。分からなくなったら、ここへ。</p><button class="pri" id="tre">サクラのチュートリアルをもう一度見る</button></div></div></div>`;
+  h+=LIB.map(([t,b],i)=>`<details class="lib" ${i===0?'open':''}><summary>${t}</summary>${b.map(x=>x.startsWith('<table')?x:`<p>${x.startsWith('<b>')||x.includes('<b>')?x:esc(x)}</p>`).join('')}</details>`).join('');
+  h+=`<h2 class="sec">インテレギア図鑑</h2><div class="grid figs">${figs.map(c=>`<div class="item fig">${portrait(c.code)}<div class="bd"><b>${esc(c.name)}</b>${c.code==='f_sakura'?' <span class="tag">初期配布</span>':''}<div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 0">${esc(c.descr)}</p></div></div>`).join('')}</div>`;
+  $('#main').innerHTML=h;
+  $('#tre').onclick=showTut;
+}
 const CATS=[['all','すべて'],['figure','インテレギア'],['weapon','武装'],['shield','盾'],['head','頭'],['arm','腕'],['body','胴'],['leg','脚'],['back','背中'],['chip','チップ']];
 const catKey=c=>c.kind==='figure'?'figure':c.kind==='weapon'?'weapon':c.kind==='chip'?'chip':(c.stats.part==='hand'?'shield':c.stats.part);
 let CF='all',CAFF=false;
@@ -431,7 +504,7 @@ function vCat(){
     const lbl=CATS.find(x=>x[0]===key)[1];
     h+=`<h2 class="sec">${lbl}</h2><div class="grid ${key==='figure'?'figs':''}">`+l.map(c=>{const k=c.kind,o=owned(c);
       return `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b>${o&&k!=='figure'?` <span class="tag">所持 ${o}</span>`:''}<div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-      ${k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`;}).join('')+'</div>';}
+      ${c.code==='f_sakura'?`<button class="sm" disabled>初期配布（購入不可）</button>`:k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`;}).join('')+'</div>';}
   if(!list.length)h+='<p class="mute">条件に合う商品がありません。</p>';
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{CF=b.dataset.cf;flash='';vCat();});
@@ -472,7 +545,7 @@ function vRes(){
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{RSEL=+b.dataset.rs;vRes();window.scrollTo(0,0);});
 }
-document.addEventListener('click',e=>{const im=e.target.closest('.pt-frame img,.pt-frame svg');if(!im||im.closest('.fc'))return;
+document.addEventListener('click',e=>{const im=e.target.closest('.pt-frame img,.pt-frame svg');if(!im||im.closest('.fc,#tut'))return;
   const o=document.createElement('div');o.id='lb';
   o.innerHTML=im.tagName==='IMG'?`<img src="${im.src}" alt="">`:im.outerHTML.replace('<svg','<svg style="height:90vh;width:auto;max-width:94vw;background:#1a2240;border-radius:10px"');
   o.onclick=()=>o.remove();document.body.appendChild(o);});
