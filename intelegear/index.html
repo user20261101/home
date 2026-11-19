@@ -51,6 +51,24 @@ h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
 .item.fig .bd{flex:1;min-width:0}
 .pt-frame{flex:0 0 108px;aspect-ratio:2/3;border:1px dashed var(--rule);border-radius:8px;background:repeating-linear-gradient(135deg,#1a2240 0 8px,#161c34 8px 16px);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--mute);font-size:11px;text-align:center;line-height:1.3}
 .pt-frame img{width:100%;height:100%;object-fit:cover;display:block}
+.item.it{display:flex;gap:10px;align-items:flex-start}
+.item.it .dot{flex:0 0 56px;width:56px;height:56px;image-rendering:pixelated;background:#101733;border:1px solid var(--rule);border-radius:8px;padding:2px}
+.item.it .b2{flex:1;min-width:0}
+.grid.figs.big{grid-template-columns:repeat(auto-fill,minmax(440px,1fr))}
+.item.fig.big .pt-frame{flex:0 0 220px;cursor:zoom-in}
+.item.fig.big{gap:16px}
+@media(max-width:560px){.grid.figs.big{grid-template-columns:1fr}.item.fig.big{flex-direction:column}.item.fig.big .pt-frame{flex:none;width:100%;max-width:280px;margin:0 auto}}
+#lb{position:fixed;inset:0;background:rgba(5,8,18,.88);display:flex;align-items:center;justify-content:center;z-index:50;cursor:zoom-out}
+#lb img{max-width:94vw;max-height:92vh;border-radius:10px}
+.hero{border-color:var(--accent)}
+.crown{font-size:18px;font-weight:700;margin:6px 0}
+.crown small{font-size:13px;font-weight:400;color:var(--mute)}
+.scene{margin:10px 0;position:relative;aspect-ratio:16/9;border:1px dashed var(--rule);border-radius:10px;overflow:hidden;background:repeating-linear-gradient(135deg,#1a2240 0 10px,#161c34 10px 20px);display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:13px}
+.scene img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scene figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 8px;background:linear-gradient(transparent,rgba(5,8,18,.85));color:#fff;font-size:13px;line-height:1.4}
+.story h4{font-size:17px;margin:14px 0 6px}
+.story p{margin:8px 0;line-height:1.85;font-size:15px}
+.story p.fin{border-top:1px solid var(--rule);padding-top:10px;font-weight:700}
 .mapbox{position:relative;margin:4px 0 8px;line-height:0}
 .mapbox img{width:100%;border:1px solid var(--rule);border-radius:8px;display:block}
 .rtsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -67,6 +85,7 @@ h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
 <header><h1>百姫大戦<small>テスト版</small></h1><span class="sp"></span><span id="who"></span><button id="logout" hidden>ログアウト</button></header>
 <nav id="nav" hidden></nav>
 <main id="main"><p class="mute">読み込み中…</p></main>
+<script src="itemart.js"></script>
 <script>
 const SB_URL='https://zapdekswignvawvmqojd.supabase.co';
 const SB_KEY='sb_publishable_sSaJ9wm9x7Bjw9D4Hg9Xiw_ZrvyKDhw';
@@ -178,6 +197,7 @@ function sortieUpd(f){
   const rt=$('#rt');if(rt)rt.innerHTML=hasMap(f)?(route.length?`経路：${route.map(r=>`<b>${r}</b>`).join(' → ')}（${route.length}か所）`:'<span style="color:var(--err)">マップの上でスタート地点を選んでください。</span>'):'';
   const a=$('#apv');if(a){const p=aptPreview(f);a.innerHTML=p?`適性　${p}`:'';}
   const fs=$('#fsum');if(fs){const fg=ITEMS.find(i=>i.id==$('#sf').value);fs.innerHTML=fg?`<div class="st">総合　${effLine(fg)}</div>${loadBar(fg)}<div class="st">${eqSummary(fg)}</div><div class="st" style="margin-top:4px">装備はガレージで変えられます。</div>`:'';}}
+const ico=code=>window.ItemArt&&CAT[code]?ItemArt.svg(code,CAT[code].stats,56):'';
 const portrait=code=>`<div class="pt-frame">${PIC[code]?`<img src="${PIC[code]}" alt="" loading="lazy" onerror="this.parentNode.textContent='画像準備中'">`:'画像準備中'}</div>`;
 const ENVN={land:'陸',water:'水',space:'宇'},GR=['C','B','A','S'];
 const aptTxt=a=>Object.entries(a||{}).map(([k,v])=>`${ENVN[k]}+${v}段階`).join(' ');
@@ -263,7 +283,7 @@ function vGarage(){
   let h=`<div class="card"><h2>ガレージ</h2><p class="mute">インテレギアごとに装備を付け替えます。部位は、右手・左手・右腕・左腕・頭・胴・脚・背中・チップ2枠です。装備の重量の合計が、インテレギアの積載量を超えることはできません。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。シンクロ率は、同じインテレギアで出撃するたびに少しずつ上がり、体の性能は変わらないまま、ソフトウェアが成長して得点と安定感が上がります。</p>${msgBox()}</div>`;
   const figs=g('figure');
   h+=`<h2 class="sec">インテレギア（${figs.length}）</h2>`;
-  h+=figs.length?`<div class="grid figs">${figs.map(i=>`<div class="item fig">${portrait(i.code)}<div class="bd"><b>${iname(i)}</b><div class="st">基本　${stLine(i)}</div><div class="st" style="margin-top:4px">総合　${effLine(i)}</div>${loadBar(i)}${syncBar(i)}<div class="st">${eqSummary(i)}</div>${btns(i,'figure')}</div></div>`).join('')}</div>`:'<p class="mute">なし（「カタログ」で購入してください）</p>';
+  h+=figs.length?`<div class="grid figs big">${figs.map(i=>`<div class="item fig big">${portrait(i.code)}<div class="bd"><b>${iname(i)}</b><div class="st">基本　${stLine(i)}</div><div class="st" style="margin-top:4px">総合　${effLine(i)}</div>${loadBar(i)}${syncBar(i)}<div class="st">${eqSummary(i)}</div>${btns(i,'figure')}</div></div>`).join('')}</div>`:'<p class="mute">なし（「カタログ」で購入してください）</p>';
   if(editFig&&itemOf(editFig)){const fg=itemOf(editFig),eq=eqOf(fg.id);
     h+=`<div class="card" id="editor" style="border-color:var(--accent);margin-top:12px"><h3>装備編集：${iname(fg)}</h3>${loadBar(fg)}<div class="st">総合　${effLine(fg)}（積載が重いほど機動が下がります）</div><p class="msg" id="em"></p>
     ${SLOTS.map(([sl,lb,part])=>{const cands=ITEMS.filter(i=>CAT[i.code].kind!=='figure'&&CAT[i.code].stats.part===part);
@@ -272,7 +292,7 @@ function vGarage(){
     <div class="row" style="margin-top:12px"><button id="edx">閉じる</button></div></div>`;}
   for(const k of ['weapon','armor','chip']){const l=g(k);
     h+=`<h2 class="sec">${KIND[k]}（${l.length}）</h2>`;
-    h+=l.length?`<div class="grid">${l.map(i=>`<div class="item"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>${where(i)}${btns(i,k)}</div>`).join('')}</div>`:'<p class="mute">なし</p>';}
+    h+=l.length?`<div class="grid">${l.map(i=>`<div class="item it">${ico(i.code)}<div class="b2"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>${where(i)}${btns(i,k)}</div></div>`).join('')}</div>`:'<p class="mute">なし</p>';}
   $('#main').innerHTML=h;
   const act=async(fn,ok)=>{const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();};
   document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{editFig=editFig===+b.dataset.ed?null:+b.dataset.ed;flash='';vGarage();if(editFig)document.getElementById('editor')?.scrollIntoView({behavior:'smooth'});});
@@ -288,8 +308,8 @@ function vGarage(){
 function vCat(){
   let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。同じものを何個でも買えます。</p>${msgBox()}</div>`;
   for(const k of Object.keys(KIND)){h+=`<h2 class="sec">${KIND[k]}</h2><div class="grid ${k==='figure'?'figs':''}">`+Object.values(CAT).filter(c=>c.kind===k).map(c=>
-    `<div class="item ${k==='figure'?'fig':''}">${k==='figure'?portrait(c.code)+'<div class="bd">':''}<b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-    <button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>${k==='figure'?'</div>':''}</div>`).join('')+'</div>';}
+    `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
+    <button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button></div></div>`).join('')+'</div>';}
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await sb.rpc('ig_buy',{p_code:b.dataset.b});
     flash=r.error?'!'+r.error.message:`${CAT[b.dataset.b].name}を購入しました。ガレージに入りました。`;await load();});
@@ -299,16 +319,24 @@ function vRes(){
   let h='';
   if(!done)h=`<div class="card"><h2>まだ結果はありません</h2><p class="mute">最初の更新をお待ちください。</p></div>`;
   else{
-    h=`<div class="card"><h2>${esc(done.title)}　結果</h2><p class="mute">${fmt(done.published_at)} 公開。NPCは運営が用意した参加者です。</p></div>`;
+    h=`<div class="card"><h2>${esc(done.title)}　戦場の記録</h2><p class="mute">${fmt(done.published_at)} 公開。NPCは運営が用意した参加者です。</p></div>`;
     for(const f of FIELDS.filter(f=>f.round_id===done.id)){
       const rs=RES.filter(x=>x.field_id===f.id),mine=rs.find(x=>x.user_id===P.user_id),rep=f.report||{};
-      h+=`<div class="card"><h3><span class="badge">${RULE[f.rule]}</span>${esc(f.title)}</h3>`;
-      if(rep.summary)h+=`<p>${esc(rep.summary)}</p>`;
-      if(rep.team)h+=`<p class="mute">紅 ${rep.team.red} ／ 白 ${rep.team.white}　→ ${rep.team.winner==='red'?'紅':'白'}の勝利</p>`;
-      if(rep.threshold)h+=`<p class="mute">生存基準 ${rep.threshold}</p>`;
-      if(mine)h+=`<p><b>あなた：${mine.rank}位 / ${rs.length}人</b>　${esc(mine.outcome||'')}　<span class="pt">+${mine.points_gained}pt</span>${mine.note?'<br><span class="mute">'+esc(mine.note)+'</span>':''}</p>`;
+      const w=rs[0],wn=w?(w.name||w.npc_name):'';
+      let head='';
+      if(f.rule==='royale')head=`優勝　${esc(wn)}　<small>${w?w.score:''}点</small>`;
+      else if(f.rule==='team')head=rep.team?`${rep.team.winner==='red'?'紅':'白'}組の勝利　<small>紅 ${rep.team.red} ／ 白 ${rep.team.white}　MVP ${esc(wn)}（${w?w.score:''}点）</small>`:esc(wn);
+      else{const sv=rs.filter(x=>/生存/.test(x.outcome||'')).length;head=`生存 ${sv}人 ／ 脱落 ${rs.length-sv}人　<small>最高得点 ${esc(wn)}（${w?w.score:''}点）／ 基準 ${rep.threshold??''}</small>`;}
+      h+=`<div class="card hero"><h3><span class="badge">${RULE[f.rule]}</span>${esc(f.title)}</h3>
+        <div class="crown">🏆 ${head}</div>`;
+      if(mine)h+=`<p style="margin:4px 0"><b>あなた：${mine.rank}位 / ${rs.length}人</b>　${esc(mine.outcome||'')}　<span class="pt">+${mine.points_gained}pt</span>${mine.note?'　<span class="mute">'+esc(mine.note)+'</span>':''}</p>`;
+      const sc=rep.scene||{};
+      h+=`<figure class="scene" style="margin:10px 0">${sc.img?`<img src="${esc(sc.img)}" alt="" onerror="this.remove()">`:''}${sc.img?'':'場面カット　準備中'}${rep.scene_caption?`<figcaption>${esc(rep.scene_caption)}</figcaption>`:''}</figure>`;
+      if((rep.story||[]).length){
+        h+=`<div class="story">${rep.headline?`<h4>${esc(rep.headline)}</h4>`:''}${rep.story.map((t,k)=>`<p class="${k===rep.story.length-1?'fin':''}">${esc(t)}</p>`).join('')}</div>`;
+      }else if(rep.summary)h+=`<p>${esc(rep.summary)}</p>`;
       const top=rs.slice(0,10);if(mine&&mine.rank>10)top.push(mine);
-      h+=`<table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
+      h+=`<h4 style="margin:16px 0 6px;font-size:15px">順位表</h4><table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
       (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}<p>${esc(r.text)}</p></div>`);
       if((rep.editor_note||[]).length)h+=`<div class="card" style="background:var(--panel2);margin:10px 0 0"><b>編集部ノート</b>${rep.editor_note.map(t=>`<p style="margin:6px 0 0;font-size:14px">${esc(t)}</p>`).join('')}</div>`;
       h+='</div>';}
