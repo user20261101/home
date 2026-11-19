@@ -308,10 +308,10 @@ function vGarage(){
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
 function vCat(){
-  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは世界に1体ずつだけで、誰かが所持している間はソールドアウトです（売却すると再び買えます）。武装・防具・チップは何個でも買えます。</p>${msgBox()}</div>`;
+  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは、1アカウントにつき各1体までです。持っているものはソールドアウトになります（売却すると再び買えます）。武装・防具・チップは何個でも買えます。</p>${msgBox()}</div>`;
   for(const k of Object.keys(KIND)){h+=`<h2 class="sec">${KIND[k]}</h2><div class="grid ${k==='figure'?'figs':''}">`+Object.values(CAT).filter(c=>c.kind===k).map(c=>
     `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b><div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-    ${k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト${ITEMS.some(i=>i.code===c.code)?'（あなたが所持）':''}</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`).join('')+'</div>';}
+    ${k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`).join('')+'</div>';}
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await sb.rpc('ig_buy',{p_code:b.dataset.b});
     flash=r.error?'!'+r.error.message:`${CAT[b.dataset.b].name}を購入しました。ガレージに入りました。`;await load();});
