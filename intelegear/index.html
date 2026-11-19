@@ -144,6 +144,8 @@ function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.point
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes})[tab]();window.scrollTo(0,0);}
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
 const PIC={f_arte:'img/f_arte.png'};
+const FMAP={'廃棄コロニー殲滅戦':'img/map_colony.png'};
+const mapImg=f=>FMAP[f.title]?`<img src="${FMAP[f.title]}" alt="${esc(f.title)}の地図" style="width:100%;border:1px solid var(--rule);border-radius:8px;margin:4px 0 8px;display:block" onerror="this.remove()">`:'';
 const portrait=code=>`<div class="pt-frame">${PIC[code]?`<img src="${PIC[code]}" alt="" loading="lazy" onerror="this.parentNode.textContent='画像準備中'">`:'画像準備中'}</div>`;
 const ENVN={land:'陸',water:'水',space:'宇'},GR=['C','B','A','S'];
 const aptTxt=a=>Object.entries(a||{}).map(([k,v])=>`${ENVN[k]}+${v}段階`).join(' ');
@@ -169,7 +171,7 @@ function vField(){
   const fs=FIELDS.filter(f=>f.round_id===open.id),mine=ENT.find(e=>e.round_id===open.id);
   let h=`<div class="card"><h2>${esc(open.title)}</h2><p class="mute">出撃登録の締切：${fmt(open.deadline)}（次の更新で結果が出ます）。登録は何度でも変更できます。</p>${msgBox()}</div>`;
   if(!ITEMS.some(i=>CAT[i.code].kind==='figure'))h+=`<div class="card"><b>まだインテレギアがいません。</b><p class="mute">「カタログ」タブで購入してください。</p></div>`;
-  h+=fs.map(f=>`<div class="card"><h3><span class="badge">${RULE[f.rule]}</span><span class="badge" style="border-color:var(--pink);color:var(--pink)">環境：${envTxt(f)}</span>${esc(f.title)}</h3><p>${esc(f.brief)}</p>
+  h+=fs.map(f=>`<div class="card"><h3><span class="badge">${RULE[f.rule]}</span><span class="badge" style="border-color:var(--pink);color:var(--pink)">環境：${envTxt(f)}</span>${esc(f.title)}</h3>${mapImg(f)}<p>${esc(f.brief)}</p>
     <div class="row"><span class="mute">参加登録 ${COUNTS[f.id]||0}人</span><span class="sp"></span>${mine&&mine.field_id===f.id?'<span class="badge" style="border-color:var(--ok);color:var(--ok)">出撃登録済み</span>':''}<button class="pri" data-f="${f.id}">${mine&&mine.field_id===f.id?'編成を変更':'ここに出撃する'}</button></div></div>`).join('');
   if(pick){const f=FIELDS.find(x=>x.id===pick);h+=sortie(f,mine&&mine.field_id===f.id?mine:null);}
   $('#main').innerHTML=h;
