@@ -52,6 +52,7 @@ h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
 .pt-frame{flex:0 0 108px;aspect-ratio:2/3;border:1px dashed var(--rule);border-radius:8px;background:repeating-linear-gradient(135deg,#1a2240 0 8px,#161c34 8px 16px);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--mute);font-size:11px;text-align:center;line-height:1.3}
 .pt-frame{position:relative}
 .pt-frame svg.figdot{width:100%;height:100%;display:block;image-rendering:pixelated;cursor:zoom-in}
+.fc .pt-frame svg.figdot,.fc .pt-frame img{cursor:pointer}
 .pt-frame .tmp{position:absolute;right:4px;top:4px;font-size:10px;background:rgba(5,8,18,.75);color:var(--mute);border-radius:99px;padding:0 6px;pointer-events:none}
 .pt-frame img{width:100%;height:100%;object-fit:cover;display:block}
 .item.it{display:flex;gap:10px;align-items:flex-start}
@@ -72,6 +73,33 @@ h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
 .story h4{font-size:17px;margin:14px 0 6px}
 .story p{margin:8px 0;line-height:1.85;font-size:15px}
 .story p.fin{border-top:1px solid var(--rule);padding-top:10px;font-weight:700}
+.fstrip{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px}
+.fc{flex:0 0 118px;border:2px solid var(--rule);border-radius:10px;background:var(--panel2);padding:6px;cursor:pointer;text-align:center;position:relative}
+.fc.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(74,170,255,.22)}
+.fc .pt-frame{flex:none;width:100%;margin-bottom:4px}
+.fc b{font-size:12.5px;display:block;line-height:1.3}
+.tag{display:inline-block;font-size:10.5px;border-radius:99px;padding:0 7px;background:var(--accent);color:#06121f;font-weight:700}
+.asm-r{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto}
+@media(max-width:760px){.asm-r{position:static;max-height:none}}
+.asm{display:grid;grid-template-columns:minmax(300px,390px) 1fr;gap:12px;align-items:start}
+@media(max-width:760px){.asm{grid-template-columns:1fr}}
+.unit{display:flex;gap:12px;align-items:flex-start}
+.unit .uf{flex:0 0 130px}.unit .uf .pt-frame{flex:none;width:100%}
+.unit .us{flex:1;min-width:0}
+.sb{display:flex;align-items:center;gap:6px;font-size:12.5px;margin:3px 0}
+.sb i{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}.sb u{display:block;height:100%;background:var(--accent)}
+.sgroup{font-size:12px;color:var(--accent);margin:10px 0 2px}.sgroup:first-child{margin-top:0}
+.sl{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--rule);border-radius:8px;background:var(--panel2);margin:5px 0;cursor:pointer}
+.sl:hover{border-color:var(--accent)}.sl.on{border-color:var(--accent);background:#1c2a52}
+.sl .lb{flex:0 0 52px;font-size:12px;color:var(--mute)}
+.sl .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl .w{font-size:11px;color:var(--mute)}
+.emp{display:inline-block;flex:0 0 32px;width:32px;height:32px;border:1px dashed var(--rule);border-radius:6px}
+.pk .row2{display:flex;gap:10px;align-items:center;border:1px solid var(--rule);border-radius:8px;padding:6px 8px;margin:6px 0;background:var(--panel2);cursor:pointer}
+.pk .row2:hover{border-color:var(--accent)}.pk .row2.cur{border-color:var(--ok)}.pk .row2.ng{opacity:.5;cursor:not-allowed}
+.pk .row2 .dot{flex:0 0 44px;background:#101733;border:1px solid var(--rule);border-radius:8px;padding:2px}
+.dl{display:inline-block;font-size:11px;border-radius:99px;padding:0 7px;margin:2px 3px 0 0;background:#1b2a4a}
+.dl.up{color:#6ee7a0}.dl.dn{color:#ff8a9b}
 .mapbox{position:relative;margin:4px 0 8px;line-height:0}
 .mapbox img{width:100%;border:1px solid var(--rule);border-radius:8px;display:block}
 .rtsvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -262,7 +290,7 @@ function opt(kind,sel,none){const l=ITEMS.filter(i=>CAT[i.code].kind===kind);
   return (none?'<option value="">なし</option>':'')+l.map(i=>`<option value="${i.id}" ${sel==i.id?'selected':''}>${iname(i).replace(/<[^>]*>/g,'')}</option>`).join('');}
 function sortie(f,e){
   return `<div class="card" id="sortie" style="border-color:var(--accent)"><h3>出撃編成：${esc(f.title)}</h3>
-  <label>インテレギア</label><select id="sf">${opt('figure',e?.figure_id,false)}</select>
+  <label>インテレギア</label><select id="sf">${opt('figure',e?.figure_id??GF,false)}</select>
   <div id="fsum" style="margin-top:6px"></div>
   ${hasMap(f)?`<label>出撃経路</label><p id="rt" style="margin:0"></p><div class="row" style="margin-top:6px"><button class="sm" id="rb">ひとつ戻す</button><button class="sm" id="rr">やり直す</button></div>`:''}
   <p class="mute" id="apv" style="margin:10px 0 0"></p>
@@ -281,32 +309,67 @@ function bindSortie(){
     if(r.error){$('#se').disabled=false;$('#sm').className='msg err';$('#sm').textContent=r.error.message;return;}
     flash='出撃登録しました。次の更新で結果が出ます。';pick=null;await load();};
 }
+let GF=null,GS='rh';
+try{GF=+localStorage.getItem('ig_gf')||null;}catch(e){}
+const GROUPS=[['武装（手に持つ）',['rh','lh']],['部品',['ra','la','hd','bd','lg','bk']],['強化チップ',['c1','c2']]];
+function dlt(c,cur){const out=[];
+  const add=(lb,a,b,inv)=>{const d=r1(a-b);if(!d)return;const good=inv?d<0:d>0;out.push(`<span class="dl ${good?'up':'dn'}">${lb}${d>0?'+':''}${d}</span>`);};
+  ['guard','mobility','shoot','melee'].forEach(k=>add(STN[k],c[k]||0,cur[k]||0));
+  if(c.power!==undefined||cur.power!==undefined)add('威力',c.power||0,cur.power||0);
+  add('積載量',c.cap||0,cur.cap||0);add('重量',c.weight||0,cur.weight||0,true);
+  return out.join('')||'<span class="dl">変化なし</span>';}
+function statBars(f){const b=CAT[f.code].stats,e=effStats(f);
+  return Object.keys(STN).map(k=>{const v=e[k],base=lv(b[k],f.level);const pc=Math.max(2,Math.min(100,Math.round(100*v/40)));
+    return `<div class="sb"><span style="flex:0 0 32px">${STN[k]}</span><i><u style="width:${pc}%"></u></i><b style="flex:0 0 40px;text-align:right">${r1(v)}</b></div>`;}).join('');}
 function vGarage(){
   const g=k=>ITEMS.filter(i=>CAT[i.code].kind===k);
-  const where=it=>{const e=EQ.find(x=>x.item_id===it.id);if(!e)return '';const fg=itemOf(e.figure_id),sl=SLOTS.find(x=>x[0]===e.slot);return fg?`<div class="st" style="color:var(--ok)">装備中：${esc(fg.nickname||CAT[fg.code].name)}（${sl?sl[1]:''}）</div>`:'';};
-  const btns=(i,k)=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
-    return `<div class="row" style="margin-top:8px">${k==='figure'?`<button class="sm pri" data-ed="${i.id}">${editFig===i.id?'装備編集を閉じる':'装備を変更'}</button>`:''}${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>`;};
-  let h=`<div class="card"><h2>ガレージ</h2><p class="mute">インテレギアごとに装備を付け替えます。部位は、右手・左手・右腕・左腕・頭・胴・脚・背中・チップ2枠です。装備の重量の合計が、インテレギアの積載量を超えることはできません。売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。シンクロ率は、同じインテレギアで出撃するたびに少しずつ上がり、体の性能は変わらないまま、ソフトウェアが成長して得点と安定感が上がります。</p>${msgBox()}</div>`;
   const figs=g('figure');
-  h+=`<h2 class="sec">インテレギア（${figs.length}）</h2>`;
-  h+=figs.length?`<div class="grid figs big">${figs.map(i=>`<div class="item fig big">${portrait(i.code)}<div class="bd"><b>${iname(i)}</b><div class="st">基本　${stLine(i)}</div><div class="st" style="margin-top:4px">総合　${effLine(i)}</div>${loadBar(i)}${syncBar(i)}<div class="st">${eqSummary(i)}</div>${btns(i,'figure')}</div></div>`).join('')}</div>`:'<p class="mute">なし（「カタログ」で購入してください）</p>';
-  if(editFig&&itemOf(editFig)){const fg=itemOf(editFig),eq=eqOf(fg.id);
-    h+=`<div class="card" id="editor" style="border-color:var(--accent);margin-top:12px"><h3>装備編集：${iname(fg)}</h3>${loadBar(fg)}<div class="st">総合　${effLine(fg)}（積載が重いほど機動が下がります）</div><p class="msg" id="em"></p>
-    ${SLOTS.map(([sl,lb,part])=>{const cands=ITEMS.filter(i=>CAT[i.code].kind!=='figure'&&CAT[i.code].stats.part===part);
-      return `<label>${lb}</label><select data-slot="${sl}"><option value="">なし</option>${cands.map(i=>{const e=EQ.find(x=>x.item_id===i.id),other=e&&e.figure_id!==fg.id;
-        return `<option value="${i.id}" ${eq[sl]===i.id?'selected':''}>${iname(i).replace(/<[^>]*>/g,'')}　重量${CAT[i.code].stats.weight||0}${other?'（他の体に装備中）':''}</option>`;}).join('')}</select>`;}).join('')}
-    <div class="row" style="margin-top:12px"><button id="edx">閉じる</button></div></div>`;}
+  if(!figs.some(f=>f.id===GF))GF=figs[0]?.id||null;
+  const fg=itemOf(GF);
+  const where=it=>{const e=EQ.find(x=>x.item_id===it.id);if(!e)return '';const f2=itemOf(e.figure_id),sl=SLOTS.find(x=>x[0]===e.slot);return f2?`<div class="st" style="color:var(--ok)">装備中：${esc(f2.nickname||CAT[f2.code].name)}（${sl?sl[1]:''}）</div>`:'';};
+  const btns=(i,k)=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
+    return `<div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button><button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button></div>`;};
+  let h=`<div class="card"><h2>ガレージ</h2><p class="mute" style="margin:2px 0 0">① 出撃させるインテレギアを選ぶ　→　② 付けたい部位をタップ　→　③ 一覧から装備を選ぶ。出撃のときは、ここで選んだ機体が最初から選ばれています。</p>${msgBox()}</div>`;
+  if(!figs.length){$('#main').innerHTML=h+'<p class="mute">インテレギアがいません。「カタログ」で購入してください。</p>';return;}
+  /* ① 機体選択 */
+  h+=`<h2 class="sec">① インテレギアを選ぶ（${figs.length}体）</h2><div class="fstrip">${figs.map(f=>`<div class="fc ${f.id===GF?'on':''}" data-gf="${f.id}">${portrait(f.code)}<b>${iname(f)}</b>${f.id===GF?'<span class="tag">使用機体</span>':''}</div>`).join('')}</div>`;
+  /* ② ③ アセンブル */
+  const eq=eqOf(fg.id),cs=CAT[fg.code].stats,ld=loadOf(fg);
+  const slotRow=([sl,lb,part])=>{const it=eq[sl]&&itemOf(eq[sl]);
+    return `<div class="sl ${GS===sl?'on':''}" data-gs="${sl}"><span class="lb">${lb}</span>${it?ItemArt.svg(it.code,CAT[it.code].stats,32):'<span class="emp"></span>'}<span class="nm">${it?iname(it).replace(/<[^>]*>/g,''):'<span class="mute">（空き）</span>'}</span><span class="w">${it?'重量'+(CAT[it.code].stats.weight||0):''}</span></div>`;};
+  h+=`<h2 class="sec">② 部位を選ぶ　③ 装備を選ぶ</h2><div class="asm"><div class="asm-l">
+    <div class="card unit"><div class="uf">${portrait(fg.code)}</div><div class="us"><b style="font-size:16px">${iname(fg)}</b>
+      <div class="st" style="margin:2px 0 6px">適性　${Object.keys(ENVN).map(k=>`${ENVN[k]}<b>${cs.apt[k]}</b>`).join(' ')}</div>
+      ${statBars(fg)}${loadBar(fg)}${syncBar(fg)}</div></div>
+    <div class="card slots">${GROUPS.map(([gl,ids])=>`<div class="sgroup">${gl}</div>`+ids.map(id=>slotRow(SLOTS.find(x=>x[0]===id))).join('')).join('')}</div>
+    <div class="card"><div class="row"><button class="pri" id="go">この機体で出撃へ</button>${btns(fg,'figure')}</div></div>
+  </div>`;
+  /* 右：候補一覧 */
+  const [,slb,spart]=SLOTS.find(x=>x[0]===GS);
+  const curIt=eq[GS]&&itemOf(eq[GS]),curS=curIt?CAT[curIt.code].stats:{};
+  const cands=ITEMS.filter(i=>CAT[i.code].kind!=='figure'&&CAT[i.code].stats.part===spart);
+  h+=`<div class="asm-r card pk" id="pk"><h3 style="margin:0 0 2px">${slb}に付ける装備</h3><div class="st" style="margin-bottom:6px">${PARTN[spart]}の部位に付けられる持ち物です。数字は、いま付けているものと比べた変化です。</div><p class="msg" id="em"></p>
+    <div class="row2 ${curIt?'':'cur'}" data-pk=""><span class="emp"></span><div style="flex:1"><b>外す（なし）</b>${curIt?`<div class="st">${esc(CAT[curIt.code].name)}を外します</div>`:'<div class="st">いまは何も付けていません</div>'}</div></div>`;
+  h+=cands.length?cands.map(i=>{const c=CAT[i.code].stats,isCur=curIt&&curIt.id===i.id,e=EQ.find(x=>x.item_id===i.id),other=e&&e.figure_id!==fg.id&&itemOf(e.figure_id);
+      const nu=ld.used-(curS.weight||0)+(c.weight||0),nc=ld.cap-(curS.cap||0)+(c.cap||0),over=!isCur&&nu>nc;
+      return `<div class="row2 ${isCur?'cur':''} ${over?'ng':''}" data-pk="${i.id}" ${over?'data-ng="1"':''}>${ItemArt.svg(i.code,c,44)}<div style="flex:1;min-width:0"><b>${iname(i)}</b>${isCur?' <span class="tag">装備中</span>':''}<div class="st">${stLine(i)}</div>${isCur?'':`<div>${dlt(c,curS)}</div>`}${over?`<div class="st" style="color:var(--err)">積載量オーバー（${nu} / ${nc}）</div>`:''}${other?`<div class="st" style="color:var(--mute)">${esc(other.nickname||CAT[other.code].name)}に装備中（付けると移ります）</div>`:''}</div></div>`;}).join('')
+    :`<p class="mute">この部位に付けられる持ち物がありません。「カタログ」で購入してください。</p>`;
+  h+=`</div></div>`;
+  /* 倉庫 */
+  h+=`<h2 class="sec">倉庫（強化・名前・売却）</h2><p class="mute" style="margin:0 0 6px">売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。</p>`;
   for(const k of ['weapon','armor','chip']){const l=g(k);
-    h+=`<h2 class="sec">${KIND[k]}（${l.length}）</h2>`;
+    h+=`<h3 style="font-size:14px;margin:12px 0 6px">${KIND[k]}（${l.length}）</h3>`;
     h+=l.length?`<div class="grid">${l.map(i=>`<div class="item it">${ico(i.code)}<div class="b2"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>${where(i)}${btns(i,k)}</div></div>`).join('')}</div>`:'<p class="mute">なし</p>';}
   $('#main').innerHTML=h;
   const act=async(fn,ok)=>{const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();};
-  document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{editFig=editFig===+b.dataset.ed?null:+b.dataset.ed;flash='';vGarage();if(editFig)document.getElementById('editor')?.scrollIntoView({behavior:'smooth'});});
-  const edx=$('#edx');if(edx)edx.onclick=()=>{editFig=null;vGarage();};
-  document.querySelectorAll('select[data-slot]').forEach(sel=>sel.onchange=async()=>{
-    const r=await sb.rpc('ig_equip_set',{p_fig:editFig,p_slot:sel.dataset.slot,p_item:sel.value?+sel.value:null});
-    if(r.error){await load();const em=$('#em');if(em){em.className='msg err';em.textContent=r.error.message;}return;}
-    await load();document.getElementById('editor')?.scrollIntoView({block:'nearest'});});
+  document.querySelectorAll('[data-gf]').forEach(b=>b.onclick=()=>{GF=+b.dataset.gf;try{localStorage.setItem('ig_gf',GF);}catch(e){}flash='';vGarage();});
+  document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>{GS=b.dataset.gs;flash='';vGarage();if(window.innerWidth<=760)document.getElementById('pk')?.scrollIntoView({behavior:'smooth',block:'start'});});
+  const go=$('#go');if(go)go.onclick=()=>{tab='field';draw();};
+  document.querySelectorAll('[data-pk]').forEach(b=>b.onclick=async()=>{
+    if(b.dataset.ng)return;
+    const r=await sb.rpc('ig_equip_set',{p_fig:GF,p_slot:GS,p_item:b.dataset.pk?+b.dataset.pk:null});
+    if(r.error){const em=$('#em');if(em){em.className='msg err';em.textContent=r.error.message;}return;}
+    await load();});
   document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>act(()=>sb.rpc('ig_upgrade',{p_item:+b.dataset.up}),d=>`強化しました（Lv${d.level}、${d.cost}pt）。`));
   document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
@@ -350,7 +413,7 @@ function vRes(){
   h+=`<h2 class="sec">獲得ポイントランキング</h2><div class="card"><p class="mute">購入や強化で使っても減りません（戦場で稼いだ累計）。</p><table>${RANK.map((p,i)=>`<tr class="${p.name===P.name?'me':''}"><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.earned}pt</td></tr>`).join('')}</table></div>`;
   $('#main').innerHTML=h;
 }
-document.addEventListener('click',e=>{const im=e.target.closest('.pt-frame img,.pt-frame svg');if(!im)return;
+document.addEventListener('click',e=>{const im=e.target.closest('.pt-frame img,.pt-frame svg');if(!im||im.closest('.fc'))return;
   const o=document.createElement('div');o.id='lb';
   o.innerHTML=im.tagName==='IMG'?`<img src="${im.src}" alt="">`:im.outerHTML.replace('<svg','<svg style="height:90vh;width:auto;max-width:94vw;background:#1a2240;border-radius:10px"');
   o.onclick=()=>o.remove();document.body.appendChild(o);});
