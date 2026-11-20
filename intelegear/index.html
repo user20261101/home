@@ -205,14 +205,16 @@ async function load(){
   CAT=Object.fromEntries(cat.data.map(c=>[c.code,c]));
   P=pl.data;
   if(!P){return register();}
-  const [it,ro,en,rk,eq,sy,so]=await Promise.all([
+  const [it,ro,en,rk,eq,sy,so,me]=await Promise.all([
     sb.from('ig_items').select('*').order('id'),
     sb.from('ig_rounds').select('*').order('no',{ascending:false}).limit(12),
     sb.from('ig_entries').select('*'),
     sb.from('ig_players').select('name,earned').order('earned',{ascending:false}).limit(10),
     sb.from('ig_equip').select('*'),
     sb.from('ig_sync').select('*'),
-    sb.rpc('ig_soldout')]);
+    sb.rpc('ig_soldout'),
+    sb.from('ig_meta').select('*')]);
+  META=Object.fromEntries((me.data||[]).map(x=>[x.key,x.value]));
   SOLD=Array.isArray(so.data)?so.data:[];
   SYNC={};(sy.data||[]).forEach(x=>SYNC[x.figure_id]=x.value);
   ITEMS=it.data||[];ROUNDS=ro.data||[];ENT=en.data||[];RANK=rk.data||[];EQ=eq.data||[];
@@ -329,6 +331,7 @@ function vField(){
   const hasFig=ITEMS.some(i=>CAT[i.code].kind==='figure'),hasEq=EQ.length>0;
   const mfig=mine&&itemOf(mine.figure_id);
   let h=`<div class="card"><h2>${esc(open.title)}</h2>
+    <div class="mute" style="margin:-2px 0 6px">${seasonLine()}</div>
     <div class="stat"><div class="pill ${remainMs(open.deadline)<6*3600e3?'warn':''}"><b>締切</b>${fmt(open.deadline)}<br><span class="mute">${remainTxt(open.deadline)}</span></div>
     <div class="pill ${mine?'good':'warn'}"><b>あなたの出撃</b>${mine?`✅ 登録済み<br><span class="mute">${mfig?esc(mfig.nickname||CAT[mfig.code].name):'?'}／${(TAC[mine.tactic]||['?'])[0]}${mine.route&&mine.route.length?'／経路 '+mine.route.join('→'):''}</span>`:'⚠ まだ登録していません<br><span class="mute">下で経路と機体を選んで「出撃登録する」</span>'}</div></div>
     <p class="mute" style="margin:8px 0 0">登録は締切まで何度でも変更できます。次の更新で結果が出ます。</p>${msgBox()}</div>`;
@@ -370,7 +373,9 @@ function bindSortie(){
     if(r.error){$('#se').disabled=false;$('#sm').className='msg err';$('#sm').textContent=r.error.message;return;}
     flash='出撃登録しました。次の更新で結果が出ます。';pick=null;await load();};
 }
-let GF=null,GS='rh';
+let GF=null,GS='rh',META={};
+const seasonLine=()=>{const z=META.season;return z?`シーズン${z.no}「${esc(z.title)}」（${esc(z.month)}）　戦場は今月固定。変わるのはルールだけ。`:'';};
+const nextFig=()=>{const z=META.season;if(!z||!z.next_figure_at)return '';const d=new Date(z.next_figure_at);return `次の新インテレギア：${d.getMonth()+1}月${d.getDate()}日 登場予定`;};
 try{GF=+localStorage.getItem('ig_gf')||null;}catch(e){}
 const GROUPS=[['武装（手に持つ）',['rh','lh']],['部品',['ra','la','hd','bd','lg','bk']],['チップ',['c1','c2']]];
 function dlt(c,cur){const out=[];
@@ -473,6 +478,7 @@ const LIB=[
  ['世界観',['人が住まなくなった宇宙コロニーの時代。放棄された区画には、いまも動く機械が眠っています。','その廃墟を舞台に、「大戦」と呼ばれる競技が開かれています。戦うのは人ではなく、機械の知性を持つ少女たち「インテレギア」。人々は「オーナー」として彼女たちを育て、戦場へ送り出します。','原則：力は買える、名誉は買えない。強い装備はポイントで買えますが、栄誉は戦場での結果でしか得られません。']],
  ['インテレギアとは',['Intellectual Figure（知性を持つ人形）の略。小さな体に高度な知性を宿した戦闘用の機体です。','体の性能（射撃・機動・格闘・防御・積載量）と、陸・水・宇宙の適性は機体ごとに決まっています。装備で姿と性能が変わり、同じ機体で戦い続けるとシンクロ率が上がります。','1アカウントにつき、各機体は1体までです。最初の1体「サクラ」は無料で配られます。']],
  ['一日の流れ',['平日の毎日12:00に更新され、結果が出ます。出撃登録の締切は、次の営業日の10:30です。','① カタログで買う　② ガレージで装備する　③ 戦場で経路・機体・作戦を選んで出撃登録　④ 更新で結果とポイントを受け取る。','締切までは、何度でも編成を変更できます。']],
+ ['シーズンと更新',['1か月を1シーズンとして、戦場（マップ・環境）は1か月間固定です。毎回変わるのはルール（バトルロイヤル／紅白戦／耐久試験）だけなので、同じ地形をじっくり極められます。','新しいインテレギアは月に1回、月初に登場します。シーズンが変わる時に、戦場も新しくなります。']],
  ['戦場とルール',['戦場は1回につき1つ。同じ戦場でも、回ごとにルールが変わります。','<table><tr><th>ルール</th><th>勝敗</th><th>ポイント</th></tr><tr><td>バトルロイヤル</td><td>得点の順位</td><td>参加10pt、優勝+80、入賞（2〜3位）+40、上位3割+20、その他+5</td></tr><tr><td>紅白戦</td><td>チームの合計得点</td><td>参加10pt、勝利チーム+40、個人1位（MVP）+30</td></tr><tr><td>耐久試験</td><td>基準点を超えれば生存</td><td>参加10pt、生存+30、上位3位+20</td></tr></table>']],
  ['マップと経路・適性',['戦場の地図には、A〜Hの地点があります。スタート地点から最大3か所まで、経路を選びます。地点ごとに、射撃・格闘・守り・機動の補正が違い、補給（少し有利）や危険（少し不利）がある地点もあります。','同じ地点を続けて選ぶと「待ち伏せ」になり、少し有利です。','適性は、陸・水・宇宙の3つ。S・A・B・Cの段階があり、高いほど得点が伸びます。適性チップや専用装甲で、1段階上げられます。']],
  ['作戦',['<b>攻め</b>：結果の振れ幅が大きい。うまくいけば大勝ち、外せば大負け。','<b>堅実</b>：振れ幅が小さく、順位が安定する。','<b>待ち伏せ</b>：中くらいの振れ幅。戦場によって相性が変わる。']],
@@ -494,7 +500,7 @@ const catKey=c=>c.kind==='figure'?'figure':c.kind==='weapon'?'weapon':c.kind==='
 let CF='all',CAFF=false;
 function vCat(){
   const all=Object.values(CAT),owned=c=>ITEMS.filter(i=>i.code===c.code).length;
-  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは1アカウントにつき各1体まで（持っているものはソールドアウト、売却すると再び買えます）。武装・防具・チップは何個でも買えます。</p>${msgBox()}
+  let h=`<div class="card"><h2>フィギュアカタログ</h2><p class="mute">ポイントでインテレギアと装備を購入します。インテレギアは1アカウントにつき各1体まで（持っているものはソールドアウト、売却すると再び買えます）。武装・防具・チップは何個でも買えます。新しいインテレギアは月に1回、月初に登場します。${nextFig()?'<br><b style="color:var(--pink)">'+nextFig()+'</b>':''}</p>${msgBox()}
    <div class="chips">${CATS.map(([k,l])=>`<button class="${CF===k?'on':''}" data-cf="${k}">${l}${k==='all'?'':'（'+all.filter(c=>catKey(c)===k).length+'）'}</button>`).join('')}</div>
    <label style="display:flex;gap:6px;align-items:center;margin:0;color:var(--ink)"><input type="checkbox" id="caf" ${CAFF?'checked':''}> 今のポイントで買えるものだけ表示（所持 ${P.points}pt）</label></div>`;
   const list=all.filter(c=>(CF==='all'||catKey(c)===CF)&&(!CAFF||(P.points>=c.price&&!(c.kind==='figure'&&SOLD.includes(c.code)))));
@@ -503,7 +509,7 @@ function vCat(){
     const lbl=CATS.find(x=>x[0]===key)[1];
     h+=`<h2 class="sec">${lbl}</h2><div class="grid ${key==='figure'?'figs':''}">`+l.map(c=>{const k=c.kind,o=owned(c);
       return `<div class="item ${k==='figure'?'fig':'it'}">${k==='figure'?portrait(c.code)+'<div class="bd">':ico(c.code)+'<div class="b2">'}<b>${esc(c.name)}</b>${o&&k!=='figure'?` <span class="tag">所持 ${o}</span>`:''}<div class="st">${stLine({code:c.code,level:0})}</div><p class="mute" style="margin:4px 0 8px">${esc(c.descr)}</p>
-      ${c.code==='f_sakura'?`<button class="sm" disabled>初期配布（購入不可）</button>`:k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`;}).join('')+'</div>';}
+      ${c.release_at&&new Date(c.release_at)>new Date()?`<button class="sm" disabled>${new Date(c.release_at).getMonth()+1}月${new Date(c.release_at).getDate()}日 登場予定</button>`:c.code==='f_sakura'?`<button class="sm" disabled>初期配布（購入不可）</button>`:k==='figure'&&SOLD.includes(c.code)?`<button class="sm" disabled>ソールドアウト（所持中）</button>`:`<button class="sm pri" data-b="${c.code}" ${P.points<c.price?'disabled':''}>${c.price}pt で購入</button>`}</div></div>`;}).join('')+'</div>';}
   if(!list.length)h+='<p class="mute">条件に合う商品がありません。</p>';
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{CF=b.dataset.cf;flash='';vCat();});
