@@ -163,7 +163,7 @@ const SB_KEY='sb_publishable_sSaJ9wm9x7Bjw9D4Hg9Xiw_ZrvyKDhw';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const STN={shoot:'射撃',mobility:'機動',melee:'格闘',guard:'防御'};
-const KIND={figure:'インテレギア',weapon:'武装',armor:'防具・部品',chip:'強化チップ'};
+const KIND={figure:'インテレギア',weapon:'武装',armor:'防具・部品',chip:'チップ'};
 const RULE={royale:'バトルロイヤル',team:'紅白戦',survival:'耐久試験'};
 const TAC={attack:['攻め','結果の振れ幅が大きい。うまくいけば大勝ち、外せば大負け。'],steady:['堅実','振れ幅が小さい。順位が安定する。'],ambush:['待ち伏せ','中くらいの振れ幅。戦場によって相性が変わる。']};
 let sb,session,P=null,CAT={},ITEMS=[],ROUNDS=[],FIELDS=[],ENT=null,COUNTS={},RES=[],RANK=[],tab='field',pick=null,flash='';
@@ -318,8 +318,8 @@ const howTo=()=>`<details class="how card"><summary>遊び方・ルールのま�
  <p><b>適性</b>：陸・水・宇宙で得意不得意があります。適性チップや専用装甲で1段階上げられます。</p>
  <p><b>積載量</b>：装備の重量の合計は機体の積載量まで。重いほど機動が下がります。</p>
  <p><b>シンクロ率</b>：同じ機体で出撃するたびに上がり、体の性能は同じまま、得点と安定感が上がります。</p>
- <p><b>ポイント</b>：戦場で稼ぎ、購入や強化に使います。獲得ランキングは累計で、使っても減りません。</p>
- <p><b>売却</b>：買った回のうちは購入価格、次の回からは半額。強化費は戻りません。</p></details>`;
+ <p><b>ポイント</b>：戦場で稼ぎ、購入に使います。獲得ランキングは累計で、使っても減りません。</p>
+ <p><b>売却</b>：買った回のうちは購入価格、次の回からは半額。</p></details>`;
 function vField(){
   const open=ROUNDS.find(r=>r.status==='open');
   if(!open){$('#main').innerHTML=`<div class="card"><h2>受付中の戦場はありません</h2><p class="mute">次の更新（平日12:00）をお待ちください。「結果」タブで前回の結果を見られます。</p></div>`;return;}
@@ -372,7 +372,7 @@ function bindSortie(){
 }
 let GF=null,GS='rh';
 try{GF=+localStorage.getItem('ig_gf')||null;}catch(e){}
-const GROUPS=[['武装（手に持つ）',['rh','lh']],['部品',['ra','la','hd','bd','lg','bk']],['強化チップ',['c1','c2']]];
+const GROUPS=[['武装（手に持つ）',['rh','lh']],['部品',['ra','la','hd','bd','lg','bk']],['チップ',['c1','c2']]];
 function dlt(c,cur){const out=[];
   const add=(lb,a,b,inv)=>{const d=r1(a-b);if(!d)return;const good=inv?d<0:d>0;out.push(`<span class="dl ${good?'up':'dn'}">${lb}${d>0?'+':''}${d}</span>`);};
   ['guard','mobility','shoot','melee'].forEach(k=>add(STN[k],c[k]||0,cur[k]||0));
@@ -388,8 +388,8 @@ function vGarage(){
   if(!figs.some(f=>f.id===GF))GF=figs[0]?.id||null;
   const fg=itemOf(GF);
   const where=it=>{const e=EQ.find(x=>x.item_id===it.id);if(!e)return '';const f2=itemOf(e.figure_id),sl=SLOTS.find(x=>x[0]===e.slot);return f2?`<div class="st" style="color:var(--ok)">装備中：${esc(f2.nickname||CAT[f2.code].name)}（${sl?sl[1]:''}）</div>`:'';};
-  const btns=(i,k)=>{const c=CAT[i.code],cost=Math.ceil(c.price*0.4)*(i.level+1);
-    return `<div class="row" style="margin-top:8px">${k!=='chip'?`<button class="sm" data-up="${i.id}" ${i.level>=5||P.points<cost?'disabled':''}>${i.level>=5?'最大':`強化 ${cost}pt`}</button>`:''}<button class="sm" data-rn="${i.id}">名前</button>${i.code==='f_sakura'?'<span class="tag">初期配布（売却不可）</span>':`<button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button>`}</div>`;};
+  const btns=(i,k)=>{
+    return `<div class="row" style="margin-top:8px"><button class="sm" data-rn="${i.id}">名前</button>${i.code==='f_sakura'?'<span class="tag">初期配布（売却不可）</span>':`<button class="sm" data-sl="${i.id}">売却 ${refundOf(i).pt}pt${refundOf(i).full?'（購入価格）':''}</button>`}</div>`;};
   let h=`<div class="card"><h2>ガレージ</h2><p class="mute" style="margin:2px 0 0">① 出撃させるインテレギアを選ぶ　→　② 付けたい部位をタップ　→　③ 一覧から装備を選ぶ。出撃のときは、ここで選んだ機体が最初から選ばれています。</p>${msgBox()}</div>`;
   if(!figs.length){$('#main').innerHTML=h+'<p class="mute">インテレギアがいません。「カタログ」で購入してください。</p>';return;}
   /* ① 機体選択 */
@@ -417,7 +417,7 @@ function vGarage(){
     :`<p class="mute">この部位に付けられる持ち物がありません。「カタログ」で購入してください。</p>`;
   h+=`</div></div>`;
   /* 倉庫 */
-  h+=`<h2 class="sec">倉庫（強化・名前・売却）</h2><p class="mute" style="margin:0 0 6px">売却は、買った回のうちなら購入価格のまま、次の回からは半額です（強化の費用は戻りません）。</p>`;
+  h+=`<h2 class="sec">倉庫（名前・売却）</h2><p class="mute" style="margin:0 0 6px">売却は、買った回のうちなら購入価格のまま、次の回からは半額です。</p>`;
   for(const k of ['weapon','armor','chip']){const l=g(k);
     h+=`<h3 style="font-size:14px;margin:12px 0 6px">${KIND[k]}（${l.length}）</h3>`;
     h+=l.length?`<div class="grid">${l.map(i=>`<div class="item it">${ico(i.code)}<div class="b2"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>${where(i)}${btns(i,k)}</div></div>`).join('')}</div>`:'<p class="mute">なし</p>';}
@@ -431,7 +431,6 @@ function vGarage(){
     const r=await sb.rpc('ig_equip_set',{p_fig:GF,p_slot:GS,p_item:b.dataset.pk?+b.dataset.pk:null});
     if(r.error){const em=$('#em');if(em){em.className='msg err';em.textContent=r.error.message;}return;}
     await load();});
-  document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>act(()=>sb.rpc('ig_upgrade',{p_item:+b.dataset.up}),d=>`強化しました（Lv${d.level}、${d.cost}pt）。`));
   document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
@@ -472,14 +471,14 @@ function drawTut(){
 }
 const LIB=[
  ['世界観',['人が住まなくなった宇宙コロニーの時代。放棄された区画には、いまも動く機械が眠っています。','その廃墟を舞台に、「大戦」と呼ばれる競技が開かれています。戦うのは人ではなく、機械の知性を持つ少女たち「インテレギア」。人々は「オーナー」として彼女たちを育て、戦場へ送り出します。','原則：力は買える、名誉は買えない。強い装備はポイントで買えますが、栄誉は戦場での結果でしか得られません。']],
- ['インテレギアとは',['Intellectual Figure（知性を持つ人形）の略。小さな体に高度な知性を宿した戦闘用の機体です。','体の性能（射撃・機動・格闘・防御・積載量）と、陸・水・宇宙の適性は機体ごとに決まっています。装備で強化でき、同じ機体で戦い続けるとシンクロ率が上がります。','1アカウントにつき、各機体は1体までです。最初の1体「サクラ」は無料で配られます。']],
+ ['インテレギアとは',['Intellectual Figure（知性を持つ人形）の略。小さな体に高度な知性を宿した戦闘用の機体です。','体の性能（射撃・機動・格闘・防御・積載量）と、陸・水・宇宙の適性は機体ごとに決まっています。装備で姿と性能が変わり、同じ機体で戦い続けるとシンクロ率が上がります。','1アカウントにつき、各機体は1体までです。最初の1体「サクラ」は無料で配られます。']],
  ['一日の流れ',['平日の毎日12:00に更新され、結果が出ます。出撃登録の締切は、次の営業日の10:30です。','① カタログで買う　② ガレージで装備する　③ 戦場で経路・機体・作戦を選んで出撃登録　④ 更新で結果とポイントを受け取る。','締切までは、何度でも編成を変更できます。']],
  ['戦場とルール',['戦場は1回につき1つ。同じ戦場でも、回ごとにルールが変わります。','<table><tr><th>ルール</th><th>勝敗</th><th>ポイント</th></tr><tr><td>バトルロイヤル</td><td>得点の順位</td><td>参加10pt、優勝+80、入賞（2〜3位）+40、上位3割+20、その他+5</td></tr><tr><td>紅白戦</td><td>チームの合計得点</td><td>参加10pt、勝利チーム+40、個人1位（MVP）+30</td></tr><tr><td>耐久試験</td><td>基準点を超えれば生存</td><td>参加10pt、生存+30、上位3位+20</td></tr></table>']],
  ['マップと経路・適性',['戦場の地図には、A〜Hの地点があります。スタート地点から最大3か所まで、経路を選びます。地点ごとに、射撃・格闘・守り・機動の補正が違い、補給（少し有利）や危険（少し不利）がある地点もあります。','同じ地点を続けて選ぶと「待ち伏せ」になり、少し有利です。','適性は、陸・水・宇宙の3つ。S・A・B・Cの段階があり、高いほど得点が伸びます。適性チップや専用装甲で、1段階上げられます。']],
  ['作戦',['<b>攻め</b>：結果の振れ幅が大きい。うまくいけば大勝ち、外せば大負け。','<b>堅実</b>：振れ幅が小さく、順位が安定する。','<b>待ち伏せ</b>：中くらいの振れ幅。戦場によって相性が変わる。']],
- ['装備と積載量',['装備できる部位は10か所：右手・左手・右腕・左腕・頭・胴・脚・背中・チップ1・チップ2。','すべての装備に重量があり、合計は機体の積載量まで。重いほど機動が下がります。追加動力や拡張パックなど、積載量を増やす装備もあります。','武装は、2つ目以降は効果が8割になります。強化は最大Lv5まで（強化チップは強化できません）。']],
+ ['装備と積載量',['装備できる部位は10か所：右手・左手・右腕・左腕・頭・胴・脚・背中・チップ1・チップ2。','すべての装備に重量があり、合計は機体の積載量まで。重いほど機動が下がります。追加動力や拡張パックなど、積載量を増やす装備もあります。','武装は、2つ目以降は効果が8割になります。']],
  ['シンクロ率',['同じインテレギアで出撃して判定されるたびに、シンクロ率が+5%されます（上限100%）。','体の性能は変わりませんが、ソフトウェアが成長して、得点が最大で約+15%、結果のブレが最大で約3割小さくなります。別の機体に乗り換えても、使わなかった機体の値は減りません。']],
- ['ポイントと売却',['ポイントは、戦場で稼ぎ、購入や強化に使います。獲得ポイントのランキングは累計で、使っても減りません。','売却は、買った回のうちなら購入価格のまま、次の回からは半額です。強化にかけたポイントは戻りません。出撃登録中の機体は売れません。']],
+ ['ポイントと売却',['ポイントは、戦場で稼ぎ、購入に使います。獲得ポイントのランキングは累計で、使っても減りません。','売却は、買った回のうちなら購入価格のまま、次の回からは半額です。出撃登録中の機体は売れません。']],
  ['用語集',['<b>オーナー</b>：プレイヤー。　<b>インテレギア</b>：戦う少女型の機体。　<b>戦場</b>：回ごとの舞台とルール。　<b>経路</b>：マップ上で通る地点の並び。　<b>適性</b>：陸・水・宇宙の得意度。　<b>積載量</b>：装備の重量の上限。　<b>シンクロ率</b>：機体ごとの熟練度。　<b>更新</b>：平日12:00の判定と次の回の開始。']]
 ];
 function vLib(){
@@ -541,7 +540,7 @@ function vRes(){
       if((rep.editor_note||[]).length)h+=`<div class="card" style="background:var(--panel2);margin:10px 0 0"><b>編集部ノート</b>${rep.editor_note.map(t=>`<p style="margin:6px 0 0;font-size:14px">${esc(t)}</p>`).join('')}</div>`;
       h+='</div>';}
   }
-  h+=`<h2 class="sec">獲得ポイントランキング</h2><div class="card"><p class="mute">購入や強化で使っても減りません（戦場で稼いだ累計）。</p><table>${RANK.map((p,i)=>`<tr class="${p.name===P.name?'me':''}"><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.earned}pt</td></tr>`).join('')}</table></div>`;
+  h+=`<h2 class="sec">獲得ポイントランキング</h2><div class="card"><p class="mute">購入で使っても減りません（戦場で稼いだ累計）。</p><table>${RANK.map((p,i)=>`<tr class="${p.name===P.name?'me':''}"><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.earned}pt</td></tr>`).join('')}</table></div>`;
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>{RSEL=+b.dataset.rs;vRes();window.scrollTo(0,0);});
 }
