@@ -47,6 +47,15 @@ S.arc=g=>{R(g,1,6,8,4,'a');R(g,2,6,6,1,'c');R(g,9,7,2,2,'n');L(g,11,6,13,8,'y');
 S.laser=g=>{R(g,1,6,10,4,'a');R(g,2,6,8,1,'c');C(g,12,8,2,'g');R(g,3,10,3,3,'d');L(g,14,8,15,8,'w');};
 S.grenade=g=>{R(g,1,6,8,4,'n');R(g,2,6,6,1,'m');C(g,12,8,3,'a');P(g,11,7,'c');P(g,12,5,'y');R(g,3,10,3,3,'d');};
 S.harpoon=g=>{L(g,2,13,12,3,'n');L(g,12,3,15,3,'m');L(g,12,3,12,6,'m');L(g,11,4,14,1,'w');L(g,2,13,1,15,'a');};
+/* ---- beam guns (ビーム系: 銃口が光る) ---- */
+S.bpistol=g=>{S.pistol(g);R(g,12,5,3,2,'g');P(g,14,5,'w');};
+S.bsmg=g=>{S.smg(g);R(g,12,6,3,2,'g');P(g,14,6,'w');};
+S.brifle=g=>{S.rifle(g);R(g,12,6,4,2,'g');R(g,6,5,5,1,'s');P(g,15,6,'w');};
+S.bmg=g=>{S.smg(g);R(g,12,6,3,2,'g');R(g,8,9,3,4,'s');P(g,14,6,'w');};
+S.bshotgun=g=>{S.shotgun(g);R(g,11,5,5,3,'g');P(g,14,5,'w');};
+S.bgatling=g=>{S.gatling(g);[5,7,9,11].forEach(y=>R(g,12,y,3,1,'g'));};
+S.bsniper=g=>{S.sniper(g);R(g,10,7,6,1,'g');P(g,15,7,'w');};
+S.bcannon=g=>{S.cannon(g);R(g,11,6,4,4,'g');R(g,12,7,3,2,'w');};
 /* ---- shields ---- */
 S.round=g=>{C(g,8,8,6,'a');ring(g,8,8,6,'c');C(g,8,8,2,'y');};
 S.buckler=g=>{C(g,8,8,4,'a');ring(g,8,8,4,'c');P(g,8,8,'y');};
@@ -93,7 +102,7 @@ S.chip=(g,cc)=>{R(g,3,3,10,10,'n');R(g,4,4,8,8,'d');for(let i=0;i<4;i++){P(g,2,4
 
 /* ---- code -> sprite ---- */
 const MAP={
-w_rifle:'rifle',w_cannon:'cannon',w_bit:'bit',w_blade:'sword',w_lance:'spear',w_knife:'knife',w_smg:'smg',w_pistol:'pistol',w_carbine:'carbine',w_arc:'arc',w_shotgun:'shotgun',w_laser:'laser',w_dmr:'dmr',w_launcher:'launcher',w_gatling:'gatling',w_missile:'missile',w_sniper:'sniper',w_bitx:'bit',w_plasma:'plasma',w_railgun:'railgun',w_drone:'drone',w_grenade:'grenade',w_harpoon:'harpoon',w_dagger:'dagger',w_whip:'whip',w_claw:'claw',w_twin:'twin',w_saber:'saber',w_spear:'spear',w_katana:'katana',w_axe:'axe',w_scythe:'scythe',w_halberd:'halberd',w_hammer:'hammer',w_pile:'pile',
+w_rifle:'rifle',w_cannon:'cannon',w_bit:'bit',w_blade:'sword',w_lance:'spear',w_knife:'knife',w_smg:'smg',w_pistol:'pistol',w_carbine:'carbine',w_arc:'arc',w_shotgun:'shotgun',w_laser:'laser',w_dmr:'dmr',w_launcher:'launcher',w_gatling:'gatling',w_missile:'missile',w_sniper:'sniper',w_bitx:'bit',w_plasma:'plasma',w_railgun:'railgun',w_drone:'drone',w_grenade:'grenade',w_harpoon:'harpoon',w_dagger:'dagger',w_whip:'whip',w_claw:'claw',w_twin:'twin',w_saber:'saber',w_spear:'spear',w_katana:'katana',w_axe:'axe',w_scythe:'scythe',w_halberd:'halberd',w_hammer:'hammer',w_pile:'pile',w_beam_pistol:'bpistol',w_beam_smg:'bsmg',w_beam_rifle:'brifle',w_beam_mg:'bmg',w_beam_shotgun:'bshotgun',w_beam_gatling:'bgatling',w_beam_sniper:'bsniper',w_beam_cannon:'bcannon',
 s_buckler:'buckler',s_tower:'tower',s_round:'round',s_kite:'kite',s_spike:'spike',s_mirror:'mirror',s_ward:'ward',s_beam:'beam',s_plate:'tower',
 h_visor:'visor',h_helm:'helm',h_light:'helm',h_horn:'horn',h_radar:'radarh',h_full:'full',h_crown:'crown',h_eye:'eye',
 g_guard:'arm',g_power:'armheavy',g_scope:'armgun',g_light:'arm',g_cap:'arm',g_blade:'armblade',g_stab:'arm',g_gun:'armgun',g_servo:'arm',g_heavy:'armheavy',
