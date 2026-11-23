@@ -607,7 +607,8 @@ function magField(done,f,rs,mine,rep){
   else ban=`<small>栄えある優勝は</small><b>${esc(wn)}</b><small>${w?w.score:''}点　　さんの手に！</small>`;
   const sc=rep.scene||{};
   let top='';if(mine){const fc=mine.figure_code,nm=fc&&CAT[fc]?CAT[fc].name:'';
-    top=`<div class="yours"><div class="yrank"><small>あなたの順位</small><div><b>${mine.rank}</b><span>位 / ${rs.length}人</span></div></div><div class="ystat"><div><small>得点</small><b>${mine.score}</b></div><div><small>獲得ポイント</small><b class="pt">+${mine.points_gained}pt</b></div><div><small>結果</small><b>${esc(mine.outcome||'')}${f.rule==='team'?'（'+(mine.side==='red'?'紅':'白')+'）':''}</b></div>${nm?`<div><small>機体</small><b>${esc(nm)}</b></div>`:''}</div>${mine.note?`<div class="yroute">${esc(mine.note)}</div>`:''}</div>`;}
+    top=`<div class="yours"><div class="yrank"><small>あなたの順位</small><div><b>${mine.rank}</b><span>位 / ${rs.length}人</span></div></div><div class="ystat"><div><small>得点</small><b>${mine.score}</b></div><div><small>獲得ポイント</small><b class="pt">+${mine.points_gained}pt</b></div><div><small>結果</small><b>${esc(mine.outcome||'')}${f.rule==='team'?'（'+(mine.side==='red'?'紅':'白')+'）':''}</b></div>${nm?`<div><small>機体</small><b>${esc(nm)}</b></div>`:''}</div>${mine.note?`<div class="yroute">${esc(mine.note)}</div>`:''}</div>`;
+    (rep.replays||[]).forEach(r=>top+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}${String(r.text||'').split(/\n+/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);}
   let h=`<section class="mag">${top?`<div class="mband you">YOUR RESULT　あなたの結果</div>${top}`:''}<div class="mband">BATTLE REPORT　${esc(RULE[f.rule])}</div>
    <div class="mbig">${esc(f.title)}　詳報！</div>
    <p class="mintro">${rep.summary?esc(rep.summary):'結果を発表します。'}</p>
@@ -622,7 +623,6 @@ function magField(done,f,rs,mine,rep){
   if(mine&&mine.rank>8)h+=`<div class="mgrid3"><div class="mini me"><b>★${mine.rank}位　${esc(nmOf(mine))}</b><i class="you">あなた</i><div>得点 ${mine.score}　${esc(mine.outcome||'')}</div><div>+${mine.points_gained}pt${mine.note?'　'+esc(mine.note):''}</div></div></div>`;
   h+=`<details class="mall"><summary>全員の順位表を見る</summary><table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${rs.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(nmOf(x))}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table></details>`;
   h+=pickRate(rs);
-  (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}${String(r.text||'').split(/\n+/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);
   if((rep.editor_note||[]).length)h+=`<div class="mband sm">編集部ノート</div><div class="mnote">${rep.editor_note.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`;
   return h+'</section>';
 }
