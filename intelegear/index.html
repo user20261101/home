@@ -170,13 +170,13 @@ details.lib table{margin:6px 0 10px}
 .mcard .mh i,.mini i{font-style:normal;font-size:10px;margin-left:6px;border:1px solid #fff6;border-radius:99px;padding:0 6px;color:#cfd6ee}
 i.you{border-color:var(--pink)!important;color:var(--pink)!important}
 .mcard .mb{display:flex;gap:10px;padding:8px}
-.mcard .av{flex:0 0 76px;aspect-ratio:3/4;background:repeating-linear-gradient(135deg,#1a2240 0 8px,#161c34 8px 16px);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#fff8;overflow:hidden}
+.mcard .av{flex:0 0 76px;aspect-ratio:2/3;background:repeating-linear-gradient(135deg,#1a2240 0 8px,#161c34 8px 16px);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#fff8;overflow:hidden}
 .mcard.big .av{flex-basis:110px}
-.mcard .av img{width:100%;height:100%;object-fit:cover}
+.mcard .av img{width:100%;height:100%;object-fit:cover;object-position:50% 10%}
 .dbox{flex:1;border:1px solid #fff4;font-size:12px;line-height:1.6;padding:5px 8px;background:#0b0f20}
 .dbox b{font-size:14px}
 .mgrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgrid2 .mcard .mb{flex-direction:column}.mgrid2 .mcard .av{flex:none;width:100%;aspect-ratio:4/3}
+.mgrid2 .mcard .mb{flex-direction:column}.mgrid2 .mcard .av{flex:none;width:100%;max-width:150px;margin:0 auto;aspect-ratio:2/3}
 .mgrid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-bottom:8px}
 .mini{border:1px solid #fff4;background:#0b0f20;padding:5px 8px;font-size:12px;line-height:1.5}
 .mall{margin-top:10px;margin-bottom:10px}.mall summary{cursor:pointer;padding:6px 0;color:var(--accent)}
@@ -553,10 +553,12 @@ function vCat(){
 let RSEL=null;
 
 const nmOf=x=>x?(x.name||x.npc_name||'?'):'';
+const NPCFIG={'リゼット':'f_verna','ミレイユ':'f_verna','ネフィラ':'f_verna','ソラナ':'f_ciel','ユーリ':'f_ciel','ハルネ':'f_garda','カナメ':'f_garda','シグルド':'f_garda','オルカ':'f_blair','トリス':'f_blair','エルナ':'f_blair','パルマ':'f_arte','クレーネ':'f_arte','ヴィオラ':'f_sakura'};
+const figOf=x=>x?(x.figure_code||NPCFIG[x.npc_name]||''):'';
 function dbox(x,rule,full){if(!x)return '';const me=x.user_id===P.user_id;
-  return `<div class="dbox ${me?'me':''}"><div>◆DATA</div><div>得点：<b>${x.score}</b></div>${rule==='team'?`<div>陣営：${x.side==='red'?'紅':'白'}</div>`:''}<div>結果：${esc(x.outcome||'')}</div><div>獲得：<b>+${x.points_gained}pt</b></div>${x.note?`<div class="mute">${esc(x.note)}</div>`:''}${full&&x.figure_code&&CAT[x.figure_code]?`<div>機体：${esc(CAT[x.figure_code].name)}</div>`:''}</div>`;}
+  return `<div class="dbox ${me?'me':''}"><div>◆DATA</div><div>得点：<b>${x.score}</b></div>${rule==='team'?`<div>陣営：${x.side==='red'?'紅':'白'}</div>`:''}<div>結果：${esc(x.outcome||'')}</div><div>獲得：<b>+${x.points_gained}pt</b></div>${x.note?`<div class="mute">${esc(x.note)}</div>`:''}${full&&figOf(x)&&CAT[figOf(x)]?`<div>機体：${esc(CAT[figOf(x)].name)}</div>`:''}</div>`;}
 function mcard(x,rule,label,big){if(!x)return '';const me=x.user_id===P.user_id;
-  const av=x.figure_code&&(PIC[x.figure_code])?`<img src="${PIC[x.figure_code]}" alt="" loading="lazy">`:`<span>${esc(nmOf(x).slice(0,1))}</span>`;
+  const fc=figOf(x),av=fc&&PIC[fc]?`<img src="${PIC[fc]}" alt="" loading="lazy">`:`<span>${esc(nmOf(x).slice(0,1))}</span>`;
   return `<div class="mcard ${big?'big':''} ${me?'me':''}"><div class="mh">★${label}　<b>${esc(nmOf(x))}</b>${x.npc_name?'<i>NPC</i>':'<i class="you">あなた</i>'}</div><div class="mb"><div class="av">${av}</div>${dbox(x,rule,true)}</div></div>`;}
 function magField(done,f,rs,mine,rep){
   const w=rs[0],wn=nmOf(w);
