@@ -278,7 +278,7 @@ function register(){
     tab='field';await load();};
 }
 function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.points} pt</span>`;
-  const T=[['field','⚔️','戦場'],['garage','🔧','ガレージ'],['cat','🛒','カタログ'],['res','📜','結果'],['lib','📚','資料室']];
+  const T=[['cat','🛒','カタログ'],['garage','🔧','ガレージ'],['field','⚔️','戦場'],['res','📜','結果'],['lib','📚','資料室']];
   const op=ROUNDS.find(r=>r.status==='open'),needs=op&&!ENT.some(e=>e.round_id===op.id);
   const n=$('#nav');n.hidden=false;n.innerHTML=T.map(t=>`<button data-t="${t[0]}" class="${tab===t[0]?'on':''}"><span class="ni">${t[1]}</span><span class="nl">${t[2]}</span>${t[0]==='field'&&needs?'<i class="nb" title="出撃登録がまだです"></i>':''}</button>`).join('');
   n.querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;pick=null;editFig=null;flash='';draw();});}
