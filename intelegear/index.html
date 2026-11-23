@@ -379,7 +379,7 @@ function vField(){
   let h=`<div class="card"><h2>${esc(open.title)}</h2>
     <div class="mute" style="margin:-2px 0 6px">${seasonLine()}</div>
     <div class="stat"><div class="pill ${remainMs(open.deadline)<6*3600e3?'warn':''}"><b>締切</b>${fmt(open.deadline)}<br><span class="mute">${remainTxt(open.deadline)}</span></div>
-    <div class="pill ${mine?'good':'warn'}"><b>あなたの出撃</b>${mine?`✅ 登録済み<br><span class="mute">${mfig?esc(mfig.nickname||CAT[mfig.code].name):'?'}／${(TAC[mine.tactic]||['?'])[0]}${mine.route&&mine.route.length?'／経路 '+mine.route.join('→'):''}</span>`:'⚠ まだ登録していません<br><span class="mute">下で経路と機体を選んで「出撃登録する」</span>'}</div></div>
+    <div class="pill ${mine?'good':'warn'}"><b>あなたの出撃</b>${mine?`✅ 登録済み<br><span class="mute">${mfig?esc(mfig.nickname||CAT[mfig.code].name):'?'}／${(TAC[mine.tactic]||['?'])[0]}${mine.side?'／'+(mine.side==='red'?'紅組':'白組'):''}${mine.route&&mine.route.length?'／経路 '+mine.route.join('→'):''}</span>`:'⚠ まだ登録していません<br><span class="mute">下で経路と機体を選んで「出撃登録する」</span>'}</div></div>
     <p class="mute" style="margin:8px 0 0">登録は締切まで何度でも変更できます。次の更新で結果が出ます。</p>${msgBox()}</div>`;
   if(!hasFig||!hasEq)h+=`<div class="card guide" style="border-color:var(--pink)"><h3>はじめての方へ　出撃までの3ステップ</h3><ol>
     <li class="${hasFig?'mute':''}"><b>カタログ</b>でインテレギアを1体と、武器を買う ${hasFig?'✅':''}</li>
@@ -404,6 +404,7 @@ function sortie(f,e){
   <div id="fsum" style="margin-top:6px"></div>
   ${hasMap(f)?`<label>出撃経路</label><p id="rt" style="margin:0"></p><div class="row" style="margin-top:6px"><button class="sm" id="rb">ひとつ戻す</button><button class="sm" id="rr">やり直す</button></div>`:''}
   <p class="mute" id="apv" style="margin:10px 0 0"></p>
+  ${f.rule==='team'?`<label>陣営（紅組か白組か、選んでください）</label><div class="tac">${[['red','紅組','赤いチーム'],['white','白組','白いチーム']].map(([k,n,d])=>`<label><input type="radio" name="sd" value="${k}" ${e&&e.side===k?'checked':''}><span><b>${n}</b>　<span class="mute">${d}</span></span></label>`).join('')}</div><p class="mute" style="margin:4px 0 0;font-size:12px">チームの合計得点で勝敗が決まります。人数の少ない側が不利になりやすいので、戦場の様子を見て選んでください。</p>`:''}
   <label>作戦</label><div class="tac">${Object.entries(TAC).map(([k,v])=>`<label><input type="radio" name="tc" value="${k}" ${(e?e.tactic:'steady')===k?'checked':''}><span><b>${v[0]}</b>　<span class="mute">${v[1]}</span></span></label>`).join('')}</div>
   <p class="msg" id="sm"></p><div class="row"><button class="pri" id="se">${e?'この編成に変更する':'出撃登録する'}</button>${SINGLE?'':'<button id="sx">閉じる</button>'}</div></div>`;}
 function bindSortie(){
@@ -414,8 +415,10 @@ function bindSortie(){
   $('#se').onclick=async()=>{
     if(!$('#sf').value){$('#sm').className='msg err';$('#sm').textContent='インテレギアを選んでください。';return;}
     if(hasMap(f)&&!route.length){$('#sm').className='msg err';$('#sm').textContent='マップの上でスタート地点を選んでください。';return;}
+    const sdEl=document.querySelector('input[name=sd]:checked');
+    if(f.rule==='team'&&!sdEl){$('#sm').className='msg err';$('#sm').textContent='紅組か白組かを選んでください。';return;}
     $('#se').disabled=true;
-    const r=await sb.rpc('ig_enter',{p_field:pick,p_fig:+$('#sf').value,p_tactic:document.querySelector('input[name=tc]:checked').value,p_route:hasMap(f)?route:null});
+    const r=await sb.rpc('ig_enter',{p_field:pick,p_fig:+$('#sf').value,p_tactic:document.querySelector('input[name=tc]:checked').value,p_route:hasMap(f)?route:null,p_side:f.rule==='team'?sdEl.value:null});
     if(r.error){$('#se').disabled=false;$('#sm').className='msg err';$('#sm').textContent=r.error.message;return;}
     flash='出撃登録しました。次の更新で結果が出ます。';pick=null;await load();};
 }
