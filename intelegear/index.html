@@ -430,7 +430,7 @@ function vGarage(){
     h+=`<h3 style="font-size:14px;margin:12px 0 6px">${KIND[k]}（${l.length}）</h3>`;
     h+=l.length?`<div class="grid">${l.map(i=>`<div class="item it">${ico(i.code)}<div class="b2"><b>${iname(i)}</b><div class="st">${stLine(i)}</div>${where(i)}${btns(i,k)}</div></div>`).join('')}</div>`:'<p class="mute">なし</p>';}
   $('#main').innerHTML=h;
-  const act=async(fn,ok)=>{const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();};
+  const act=async(fn,ok)=>{const y=window.scrollY;const r=await fn();flash=r.error?'!'+r.error.message:ok(r.data);await load();window.scrollTo(0,y);};
   document.querySelectorAll('[data-gf]').forEach(b=>b.onclick=()=>{GF=+b.dataset.gf;try{localStorage.setItem('ig_gf',GF);}catch(e){}flash='';vGarage();});
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>{GS=b.dataset.gs;flash='';vGarage();if(window.innerWidth<=760)document.getElementById('pk')?.scrollIntoView({behavior:'smooth',block:'start'});});
   const go=$('#go');if(go)go.onclick=()=>{tab='field';draw();};
