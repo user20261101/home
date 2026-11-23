@@ -455,7 +455,7 @@ const TUT=[
  {t:'最初の一歩',p:['あなたには、支度金が800ポイントあります。私は無料です。','まず、カタログで武器を1つ買って、ガレージで私に持たせてください。それから、戦場で経路を選んで、出撃登録を。','……楽しみにしています、オーナー。'],last:true}
 ];
 let tutI=0,TUT_SHOWN=false;
-function maybeTut(){if(P&&!P.tutorial_seen&&!TUT_SHOWN&&!$('#tut')){TUT_SHOWN=true;showTut();}}
+function maybeTut(){if(P&&!P.tutorial_seen&&!TUT_SHOWN&&!$('#tut')){TUT_SHOWN=true;P.tutorial_seen=true;sb.rpc('ig_tutorial_done');showTut();}}
 function showTut(){tutI=0;drawTut();}
 function closeTut(go){const o=$('#tut');if(o)o.remove();
   if(P&&!P.tutorial_seen){P.tutorial_seen=true;sb.rpc('ig_tutorial_done');}
