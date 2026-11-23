@@ -54,6 +54,8 @@ h2.sec{font-size:15px;margin:22px 0 8px;color:var(--accent)}
 .pt-frame{position:relative}
 .pt-frame svg.figdot{width:100%;height:100%;display:block;image-rendering:pixelated;cursor:zoom-in}
 .fc .pt-frame svg.figdot,.fc .pt-frame img{cursor:pointer}
+.pt-frame .zm{position:absolute;right:5px;bottom:5px;width:30px;height:30px;padding:0;border-radius:50%;border:1px solid rgba(255,255,255,.5);background:rgba(5,8,18,.7);color:#fff;font-size:15px;line-height:28px;text-align:center;cursor:zoom-in;z-index:3}
+.pt-frame .zm:hover{background:rgba(127,211,255,.9)}
 .pt-frame .tmp{position:absolute;right:4px;top:4px;font-size:10px;background:rgba(5,8,18,.75);color:var(--mute);border-radius:99px;padding:0 6px;pointer-events:none}
 .pt-frame img{width:100%;height:100%;object-fit:cover;display:block}
 .item.it{display:flex;gap:10px;align-items:flex-start}
@@ -275,7 +277,7 @@ function sortieUpd(f){
   const a=$('#apv');if(a){const p=aptPreview(f);a.innerHTML=p?`適性　${p}`:'';}
   const fs=$('#fsum');if(fs){const fg=ITEMS.find(i=>i.id==$('#sf').value);fs.innerHTML=fg?`<div class="st">総合　${effLine(fg)}</div>${loadBar(fg)}<div class="st">${eqSummary(fg)}</div><div class="st" style="margin-top:4px">装備はガレージで変えられます。</div>`:'';}}
 const ico=code=>window.ItemArt&&CAT[code]?ItemArt.svg(code,CAT[code].stats,56):'';
-const portrait=code=>`<div class="pt-frame">${PIC[code]?`<img src="${PIC[code]}" alt="" loading="lazy" onerror="this.parentNode.textContent='画像準備中'">`:(window.FigArt&&FigArt.has(code)?FigArt.svg(code)+'<span class="tmp">仮絵</span>':'画像準備中')}</div>`;
+const portrait=code=>`<div class="pt-frame">${PIC[code]?`<img src="${PIC[code]}" alt="" loading="lazy" onerror="this.parentNode.textContent='画像準備中'">`:(window.FigArt&&FigArt.has(code)?FigArt.svg(code)+'<span class="tmp">仮絵</span>':'画像準備中')}<button type="button" class="zm" aria-label="拡大して見る" title="拡大">🔍</button></div>`;
 const ENVN={land:'陸',water:'水',space:'宇'},GR=['C','B','A','S'];
 const aptTxt=a=>Object.entries(a||{}).map(([k,v])=>`${ENVN[k]}+${v}段階`).join(' ');
 const PARTN={hand:'手',arm:'腕',head:'頭',body:'胴',leg:'脚',back:'背中',chip:'チップ'};
@@ -555,6 +557,11 @@ document.addEventListener('click',e=>{const im=e.target.closest('.pt-frame img,.
   const o=document.createElement('div');o.id='lb';
   o.innerHTML=im.tagName==='IMG'?`<img src="${im.src}" alt="">`:im.outerHTML.replace('<svg','<svg style="height:90vh;width:auto;max-width:94vw;background:#1a2240;border-radius:10px"');
   o.onclick=()=>o.remove();document.body.appendChild(o);});
+document.addEventListener('click',e=>{const z=e.target.closest('.zm');if(!z)return;e.stopPropagation();e.preventDefault();
+  const im=z.parentNode.querySelector('img,svg');if(!im)return;
+  const o=document.createElement('div');o.id='lb';
+  o.innerHTML=im.tagName==='IMG'?`<img src="${im.src}" alt="">`:im.outerHTML.replace('<svg','<svg style="height:90vh;width:auto;max-width:94vw;background:#1a2240;border-radius:10px"');
+  o.onclick=()=>o.remove();document.body.appendChild(o);},true);
 boot();
 </script>
 </body>
