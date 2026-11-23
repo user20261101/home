@@ -253,7 +253,7 @@ function head(){$('#who').innerHTML=`${esc(P.name)}　<span class="pt">${P.point
 function draw(){head();({field:vField,garage:vGarage,cat:vCat,res:vRes,lib:vLib})[tab]();window.scrollTo(0,0);maybeTut();}
 const refundOf=i=>{const j=ROUNDS.find(r=>r.status==='judged'),c=CAT[i.code];const full=!j||new Date(i.created_at)>new Date(j.published_at);return {full,pt:full?c.price:Math.floor(c.price/2)};};
 const lv=(base,l,k=0.08)=>Math.round(base*(1+k*l)*10)/10;
-const PIC={f_arte:'img/f_arte.png',f_sakura:'img/f_sakura.png'};
+const PIC={f_arte:'img/f_arte.png',f_sakura:'img/f_sakura.png',f_verna:'img/f_verna.png',f_garda:'img/f_garda.png',f_ciel:'img/f_ciel.png',f_blair:'img/f_blair.png'};
 let route=[],SINGLE=false,EQ=[],editFig=null,SYNC={},SOLD=[];
 const syncBar=i=>{const v=SYNC[i.id]||0;return `<div class="st" title="体の性能は変わらず、ソフトウェアが成長して得点と安定感が上がります">シンクロ率　<b>${v}%</b></div><div style="height:5px;background:var(--line,#334);border-radius:3px;margin:2px 0 4px"><div style="height:5px;width:${v}%;background:var(--accent,#4ad);border-radius:3px"></div></div>`;};
 const hasMap=f=>!!(f.params&&f.params.map);
