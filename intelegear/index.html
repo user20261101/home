@@ -182,6 +182,12 @@ i.you{border-color:var(--pink)!important;color:var(--pink)!important}
 .mall{margin-top:10px;margin-bottom:10px}.mall summary{cursor:pointer;padding:6px 0;color:var(--accent)}
 .mnote{border:1px solid #fff4;background:#0b0f20;padding:4px 12px 8px;margin-bottom:12px}.mnote p{margin:6px 0 0;font-size:14px}
 .mag .replay{margin-bottom:8px}
+.rate{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid #fff4;background:#0b0f20;padding:10px 12px;margin-bottom:10px}
+.rate .pie{width:150px;height:150px;flex:none;margin:0 auto}
+.rate ul{list-style:none;margin:0;padding:0;flex:1;min-width:200px;font-size:13px}
+.rate li{margin:2px 0;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.rate li i{width:11px;height:11px;border-radius:2px;flex:none}
+.rate li b{margin-left:auto}
 </style>
 </head>
 <body>
@@ -560,6 +566,19 @@ function dbox(x,rule,full){if(!x)return '';const me=x.user_id===P.user_id;
 function mcard(x,rule,label,big){if(!x)return '';const me=x.user_id===P.user_id;
   const fc=figOf(x),av=fc&&PIC[fc]?`<img src="${PIC[fc]}" alt="" loading="lazy">`:`<span>${esc(nmOf(x).slice(0,1))}</span>`;
   return `<div class="mcard ${big?'big':''} ${me?'me':''}"><div class="mh">★${label}　<b>${esc(nmOf(x))}</b>${x.npc_name?'<i>NPC</i>':'<i class="you">あなた</i>'}</div><div class="mb"><div class="av">${av}</div>${dbox(x,rule,true)}</div></div>`;}
+
+const PIECOL=['#7fd3ff','#ff9ecb','#ffd166','#7be0a8','#b48cff','#ff8a8a','#5fa8ff','#f2a65a','#9be15d','#e07be0','#6fd6c8','#c9c9d6'];
+function pieSvg(items){const tot=items.reduce((a,b)=>a+b.n,0);if(!tot)return '';let a0=-Math.PI/2,out='';
+  items.forEach((it,i)=>{const fr=it.n/tot,a1=a0+fr*2*Math.PI,c=PIECOL[i%PIECOL.length];
+    if(items.length===1)out+=`<circle cx="60" cy="60" r="56" fill="${c}" stroke="#0b0f20" stroke-width="1.5"/>`;
+    else{const x0=60+56*Math.cos(a0),y0=60+56*Math.sin(a0),x1=60+56*Math.cos(a1),y1=60+56*Math.sin(a1);
+      out+=`<path d="M60 60L${x0.toFixed(2)} ${y0.toFixed(2)}A56 56 0 ${fr>.5?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}Z" fill="${c}" stroke="#0b0f20" stroke-width="1.5"/>`;}
+    a0=a1;});
+  return `<svg viewBox="0 0 120 120" class="pie" role="img" aria-label="機体選択率">${out}</svg>`;}
+function pickRate(rs){const m={};rs.forEach(x=>{const c=figOf(x);if(c)m[c]=(m[c]||0)+1;});
+  const items=Object.keys(m).map(c=>({c,n:m[c],name:CAT[c]?CAT[c].name:c})).sort((a,b)=>b.n-a.n);
+  const tot=items.reduce((a,b)=>a+b.n,0);if(!tot)return '';
+  return `<div class="mband sm">各機体選択率</div><div class="rate">${pieSvg(items)}<ul>${items.map((it,i)=>`<li><i style="background:${PIECOL[i%PIECOL.length]}"></i>${esc(it.name)}<b>${Math.round(it.n*100/tot)}%</b><span class="mute">（${it.n}体）</span></li>`).join('')}</ul></div>`;}
 function magField(done,f,rs,mine,rep){
   const w=rs[0],wn=nmOf(w);
   let ban='';
@@ -580,6 +599,7 @@ function magField(done,f,rs,mine,rep){
   if(rest.length)h+=`<div class="mgrid3">${rest.map(x=>`<div class="mini ${x.user_id===P.user_id?'me':''}"><b>★${x.rank}位　${esc(nmOf(x))}</b>${x.npc_name?'':'<i class="you">あなた</i>'}<div>得点 ${x.score}　${esc(x.outcome||'')}</div><div>+${x.points_gained}pt</div></div>`).join('')}</div>`;
   if(mine&&mine.rank>8)h+=`<div class="mgrid3"><div class="mini me"><b>★${mine.rank}位　${esc(nmOf(mine))}</b><i class="you">あなた</i><div>得点 ${mine.score}　${esc(mine.outcome||'')}</div><div>+${mine.points_gained}pt${mine.note?'　'+esc(mine.note):''}</div></div></div>`;
   h+=`<details class="mall"><summary>全員の順位表を見る</summary><table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${rs.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(nmOf(x))}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table></details>`;
+  h+=pickRate(rs);
   (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}${String(r.text||'').split(/\n+/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);
   if((rep.editor_note||[]).length)h+=`<div class="mband sm">編集部ノート</div><div class="mnote">${rep.editor_note.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`;
   return h+'</section>';
