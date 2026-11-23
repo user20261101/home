@@ -543,7 +543,7 @@ function vRes(){
       }else if(rep.summary)h+=`<p>${esc(rep.summary)}</p>`;
       const top=rs.slice(0,10);if(mine&&mine.rank>10)top.push(mine);
       h+=`<h4 style="margin:16px 0 6px;font-size:15px">順位表</h4><table><tr><th>順位</th><th>名前</th>${f.rule==='team'?'<th>陣営</th>':''}<th>得点</th><th>結果</th></tr>${top.map(x=>`<tr class="${x.user_id===P.user_id?'me':x.npc_name?'npc':''}"><td>${x.rank}</td><td>${esc(x.name||x.npc_name)}${x.npc_name?' <span class="mute">NPC</span>':''}</td>${f.rule==='team'?`<td>${x.side==='red'?'紅':'白'}</td>`:''}<td>${x.score}</td><td>${esc(x.outcome||'')}</td></tr>`).join('')}</table>`;
-      (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}<p>${esc(r.text)}</p></div>`);
+      (rep.replays||[]).forEach(r=>h+=`<div class="replay"><b>${esc(r.title||'リプレイ')}</b>${r.who?` <span class="mute">${esc(r.who)}</span>`:''}${String(r.text||'').split(/\n+/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('')}</div>`);
       if((rep.editor_note||[]).length)h+=`<div class="card" style="background:var(--panel2);margin:10px 0 0"><b>編集部ノート</b>${rep.editor_note.map(t=>`<p style="margin:6px 0 0;font-size:14px">${esc(t)}</p>`).join('')}</div>`;
       h+='</div>';}
   }
