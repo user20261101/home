@@ -465,10 +465,10 @@ function vGarage(){
   document.querySelectorAll('[data-gs]').forEach(b=>b.onclick=()=>{GS=b.dataset.gs;flash='';vGarage();if(window.innerWidth<=760)document.getElementById('pk')?.scrollIntoView({behavior:'smooth',block:'start'});});
   const go=$('#go');if(go)go.onclick=()=>{tab='field';draw();};
   document.querySelectorAll('[data-pk]').forEach(b=>b.onclick=async()=>{
-    if(b.dataset.ng)return;
+    if(b.dataset.ng)return;const y=window.scrollY;
     const r=await sb.rpc('ig_equip_set',{p_fig:GF,p_slot:GS,p_item:b.dataset.pk?+b.dataset.pk:null});
     if(r.error){const em=$('#em');if(em){em.className='msg err';em.textContent=r.error.message;}return;}
-    await load();});
+    await load();window.scrollTo(0,y);});
   document.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{{const it=ITEMS.find(x=>x.id==b.dataset.sl),rf=refundOf(it);if(confirm(rf.full?`売却しますか？（この回に買ったものなので、購入価格の${rf.pt}ptで戻ります）`:`売却しますか？（購入価格の半額、${rf.pt}ptで戻ります）`))act(()=>sb.rpc('ig_sell',{p_item:+b.dataset.sl}),d=>`売却しました（+${d.refund}pt）。`);}});
   document.querySelectorAll('[data-rn]').forEach(b=>b.onclick=()=>{const n=prompt('新しい名前（12文字まで。空で解除）','');if(n!==null)act(()=>sb.rpc('ig_rename',{p_item:+b.dataset.rn,p_name:n}),()=>'名前を変えました。');});
 }
