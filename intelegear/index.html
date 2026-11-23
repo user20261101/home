@@ -195,6 +195,12 @@ i.you{border-color:var(--pink)!important;color:var(--pink)!important}
 .ystat{flex:1;min-width:200px;display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:6px 12px}
 .ystat b{font-size:17px}.ystat b.pt{color:var(--accent)}
 .yroute{flex-basis:100%;font-size:12px;color:var(--mute)}
+.fpicks{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
+.fp{flex:0 0 92px;width:92px;min-width:0;overflow:hidden;box-sizing:border-box;padding:4px;border:2px solid var(--rule);border-radius:10px;background:var(--panel2);color:var(--ink);text-align:center;cursor:pointer}
+.fp .im{display:block;aspect-ratio:2/3;background:#202845;border-radius:6px;overflow:hidden}
+.fp .im img,.fp .im svg{width:100%;height:100%;object-fit:cover;object-position:50% 8%;display:block}
+.fp b{display:block;font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(127,211,255,.35)}
 </style>
 </head>
 <body>
@@ -398,9 +404,13 @@ function vField(){
 }
 function opt(kind,sel,none){const l=ITEMS.filter(i=>CAT[i.code].kind===kind);
   return (none?'<option value="">なし</option>':'')+l.map(i=>`<option value="${i.id}" ${sel==i.id?'selected':''}>${iname(i).replace(/<[^>]*>/g,'')}</option>`).join('');}
+function figPick(sel){const l=ITEMS.filter(i=>CAT[i.code].kind==='figure');
+  const cur=l.find(i=>i.id==sel)||l[0];
+  return `<input type="hidden" id="sf" value="${cur?cur.id:''}"><div class="fpicks">${l.map(i=>{const c=i.code,im=PIC[c]?`<img src="${PIC[c]}" alt="" loading="lazy">`:(window.FigArt&&FigArt.has(c)?FigArt.svg(c):'');
+    return `<button type="button" class="fp ${cur&&i.id===cur.id?'on':''}" data-id="${i.id}"><span class="im">${im}</span><b>${iname(i).replace(/<[^>]*>/g,'')}</b></button>`;}).join('')}</div>`;}
 function sortie(f,e){
   return `<div class="card" id="sortie" style="border-color:var(--accent)"><h3>出撃編成：${esc(f.title)}</h3>
-  <label>インテレギア</label><select id="sf">${opt('figure',e?.figure_id??GF,false)}</select>
+  <label>インテレギア（タップで選ぶ）</label>${figPick(e?.figure_id??GF)}
   <div id="fsum" style="margin-top:6px"></div>
   ${hasMap(f)?`<label>出撃経路</label><p id="rt" style="margin:0"></p><div class="row" style="margin-top:6px"><button class="sm" id="rb">ひとつ戻す</button><button class="sm" id="rr">やり直す</button></div>`:''}
   <p class="mute" id="apv" style="margin:10px 0 0"></p>
@@ -409,7 +419,7 @@ function sortie(f,e){
   <p class="msg" id="sm"></p><div class="row"><button class="pri" id="se">${e?'この編成に変更する':'出撃登録する'}</button>${SINGLE?'':'<button id="sx">閉じる</button>'}</div></div>`;}
 function bindSortie(){
   const f=FIELDS.find(x=>x.id===pick);
-  $('#sf').onchange=()=>sortieUpd(f);sortieUpd(f);
+  document.querySelectorAll('.fp').forEach(b=>b.onclick=()=>{$('#sf').value=b.dataset.id;document.querySelectorAll('.fp').forEach(x=>x.classList.toggle('on',x===b));sortieUpd(f);});sortieUpd(f);
   if(hasMap(f)){$('#rb').onclick=()=>{route.pop();refreshMap(f);};$('#rr').onclick=()=>{route=[];refreshMap(f);};}
   if($('#sx'))$('#sx').onclick=()=>{pick=null;vField();};
   $('#se').onclick=async()=>{
